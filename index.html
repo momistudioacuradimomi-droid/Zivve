@@ -47,22 +47,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 #levelLbl{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
 #levelVal{font-family:'Orbitron',sans-serif;font-size:19px;font-weight:700;color:var(--accent);text-shadow:0 0 12px var(--accent);transition:all .2s}
 #levelVal.bump{transform:scale(1.45);color:var(--gold);text-shadow:0 0 30px var(--gold)}
-#enemyCount{position:absolute;bottom:70px;right:14px;font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:right}
+#enemyCount{position:absolute;top:55px;right:14px;font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:right}
 #enemyCount span{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--red);display:block;text-shadow:0 0 8px var(--red)}
 #msgWrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;opacity:0;transition:opacity .25s,transform .25s}
 #msgWrap.show{opacity:1;transform:translate(-50%,-65%)}
 #msgText{font-family:'Orbitron',sans-serif;font-size:clamp(13px,4vw,22px);font-weight:900;letter-spacing:.1em;white-space:nowrap}
-#survivalBar{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);width:min(240px,65vw);height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+#survivalBar{position:absolute;top:48px;left:50%;transform:translateX(-50%);width:min(240px,65vw);height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
 #survivalFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:background .5s}
 #dangerRing{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-radius:50%;pointer-events:none;transition:all .3s;border:2px solid transparent}
 #dangerRing.active{border-color:rgba(255,34,68,.4);box-shadow:0 0 20px rgba(255,34,68,.3),inset 0 0 20px rgba(255,34,68,.1)}
 /* In-game controls bar */
-#gameControls{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;pointer-events:all;z-index:15}
+#gameControls{position:fixed;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:10px;pointer-events:all;z-index:15;background:rgba(3,3,10,.7);padding:5px 10px;border-radius:30px;border:1px solid rgba(255,255,255,.1)}
 .ctrl-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:16px;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
 .ctrl-btn:active,.ctrl-btn:hover{background:rgba(74,240,208,.15);border-color:rgba(74,240,208,.4);color:var(--accent)}
 .ad-slot{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:min(320px,90vw);height:50px;border:1px dashed rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.1);letter-spacing:.2em;text-transform:uppercase;border-radius:3px;pointer-events:none}
 /* Lang selector */
-#langBtn{position:absolute;bottom:70px;left:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--dim);font-size:13px;padding:4px 10px;border-radius:20px;cursor:pointer;pointer-events:all;letter-spacing:.05em;transition:all .2s}
+#langBtn{position:absolute;top:55px;left:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--dim);font-size:13px;padding:4px 10px;border-radius:20px;cursor:pointer;pointer-events:all;letter-spacing:.05em;transition:all .2s}
 #langBtn:hover{color:var(--white);background:rgba(74,240,208,.1)}
 
 /* ── OVERLAYS ── */
@@ -123,12 +123,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .share-btn:active{background:rgba(74,240,208,.28)}
 /* ── SHOP ── */
 .shop-title{font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,30px);font-weight:900;color:var(--accent);text-shadow:0 0 20px var(--accent);letter-spacing:.06em;margin-bottom:4px}
-.shop-subtitle{font-size:10px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:18px}
+.shop-subtitle{font-size:13px;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-bottom:18px}
 .orb-categories{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;max-height:60vh;overflow-y:auto;padding-right:2px;-webkit-overflow-scrolling:touch}
-.orb-cat-title{font-size:10px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.orb-cat-title{font-size:13px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700}
 .orb-cat-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06)}
 .orb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
-.orb-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 6px;cursor:pointer;pointer-events:all;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s,background .2s;position:relative;overflow:hidden;min-width:0;max-width:100%}
+.orb-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 8px;cursor:pointer;pointer-events:all;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s,background .2s;position:relative;overflow:hidden;min-width:0;max-width:100%}
 .orb-card.cat-gold,.orb-card.cat-glitter{border-color:rgba(255,229,102,.22);background:rgba(255,229,102,.03)}
 .orb-card.cat-festivity{border-color:rgba(255,100,50,.22);background:rgba(255,80,30,.03)}
 .orb-card.cat-earned{border-color:rgba(74,240,208,.2);background:rgba(74,240,208,.03)}
@@ -138,8 +138,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .orb-card.locked{opacity:.6;cursor:default}
 .orb-card.locked:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
 .orb-preview{width:44px!important;height:44px!important;min-width:44px;min-height:44px;max-width:44px;max-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
-.orb-name{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;text-align:center;line-height:1.3}
-.orb-price{font-size:9px;font-weight:700;color:var(--gold);letter-spacing:.08em}
+.orb-name{font-size:11px;letter-spacing:.08em;color:rgba(200,220,255,.85);text-transform:uppercase;text-align:center;line-height:1.3;font-weight:600}
+.orb-price{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.06em}
 .orb-badge{position:absolute;top:4px;right:4px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 5px;border-radius:10px;font-weight:700}
 .orb-badge.free{background:rgba(74,240,208,.2);color:var(--accent)}
 .orb-badge.owned{background:rgba(100,200,100,.2);color:#88ff88}
@@ -168,7 +168,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .instr-text{font-size:12px;color:rgba(200,220,255,.75);line-height:1.5;letter-spacing:.03em}
 .instr-text b{color:var(--white)}
 /* ── LANG ── */
-.lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;width:100%;margin-bottom:20px;max-height:55vh;overflow-y:auto}
+.lang-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:320px;width:100%;margin-bottom:20px;max-height:55vh;overflow-y:auto}
 .lang-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--dim);padding:10px 6px;border-radius:4px;cursor:pointer;pointer-events:all;font-size:12px;letter-spacing:.08em;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
 .lang-btn .lf{font-size:20px}.lang-btn .ln{font-size:9px;letter-spacing:.1em;text-transform:uppercase}
 .lang-btn:hover,.lang-btn.active{background:rgba(74,240,208,.1);border-color:rgba(74,240,208,.3);color:var(--white)}
@@ -218,7 +218,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .ch-player-row.me .ch-player-name{color:var(--accent)}
 .ch-player-row.winner .ch-player-name{color:var(--gold)}
 /* In-game challenge HUD */
-#challengeHUD{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);pointer-events:none;display:none;flex-direction:column;align-items:center;gap:4px;z-index:15}
+#challengeHUD{position:absolute;top:55px;left:50%;transform:translateX(-50%);pointer-events:none;display:none;flex-direction:column;align-items:center;gap:4px;z-index:15}
 #challengeHUD.active{display:flex}
 .ch-hud-title{font-size:9px;letter-spacing:.25em;color:var(--dim);text-transform:uppercase}
 .ch-hud-rows{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
@@ -351,7 +351,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div id="survivalBar"><div id="survivalFill"></div></div>
   <div id="dangerRing"></div>
   <button id="langBtn" onclick="show('langOverlay')">🌐 <span id="langCurrent">EN</span></button>
-  <div class="ad-slot" data-i18n-ad>Advertisement</div>
+  <!-- ad-slot rimossa: interferiva col gameplay -->
 </div>
 
 <!-- Tutorial -->
@@ -887,9 +887,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div class="shop-title" data-i18n="shopTitle">NEGOZIO SFERE</div>
   <div class="shop-subtitle" style="text-align:center;line-height:1.6">Ogni sfera ha un <strong style="color:var(--accent)">potere unico</strong> che cambia il gioco</div>
   <div style="font-size:10px;color:var(--dim);letter-spacing:.15em;margin-bottom:4px;text-align:center">
-    Selezionata: <span id="shopSelectedName" style="color:var(--accent);font-weight:700">—</span>
+    <span style="font-size:13px;color:var(--dim);letter-spacing:.08em">Selezionata: </span><span id="shopSelectedName" style="color:var(--accent);font-weight:700;font-size:14px">—</span>
   </div>
-  <div id="shopSelectedPower" style="font-size:9px;color:#4af0d0;letter-spacing:.06em;margin-bottom:8px;text-align:center;min-height:14px;padding:0 10px;line-height:1.4"></div>
+  <div id="shopSelectedPower" style="font-size:13px;color:#4af0d0;letter-spacing:.04em;margin-bottom:8px;text-align:center;min-height:14px;padding:0 10px;line-height:1.5"></div>
   <div class="orb-categories" id="orbCategories"></div>
   <div class="btn-row" style="margin-top:12px">
     <button class="btn-play" onclick="applyOrbSelection()" data-i18n="select">✓ SCEGLI</button>
@@ -1055,6 +1055,20 @@ const CAT_LABELS = {
 
 let selectedOrbId = localStorage.getItem('drift_orb')||'cyan';
 let ownedOrbs = JSON.parse(localStorage.getItem('drift_owned')||'["cyan","blue","white"]');
+// BETA TESTER MODE — tutte le sfere sbloccate gratuitamente
+const FREE_BONUS_ORBS=ORB_CATALOG?ORB_CATALOG.map(o=>o.id):[];
+// Sblocca dopo che ORB_CATALOG è definito
+setTimeout(()=>{
+  if(typeof ORB_CATALOG!=='undefined'){
+    ORB_CATALOG.forEach(o=>{
+      if(!ownedOrbs.includes(o.id)){
+        ownedOrbs.push(o.id);
+      }
+    });
+    localStorage.setItem('drift_owned',JSON.stringify(ownedOrbs));
+    buildShop(); // aggiorna negozio
+  }
+},100);
 let tempSelectedOrbId = selectedOrbId;
 
 function getOrb(id){ return ORB_CATALOG.find(o=>o.id===id)||ORB_CATALOG[0]; }
@@ -1164,7 +1178,7 @@ function buildShop(){
         else { badge='<span class="orb-badge premium">'+(orb.cat==='festivity'?'🎉':T('premium'))+'</span>'; cardClass=' locked'; }
         const subtext=!owned?(orb.cat==='earned'?earnLabel:festBadge==='locked_time'?getEventWindowLabel(orb.eventId):orb.price===0?'':price):'';
         const powerBadge=orb.power&&orb.power!=='none'
-          ? `<div style="font-size:7px;color:#4af0d0;letter-spacing:.04em;line-height:1.3;margin-top:2px;text-align:center;padding:0 2px">⚡ ${orb.powerDesc}</div>`
+          ? `<div style="font-size:10px;color:#4af0d0;letter-spacing:.03em;line-height:1.4;margin-top:4px;text-align:center;padding:2px 4px;background:rgba(74,240,208,.08);border-radius:4px;border:1px solid rgba(74,240,208,.15)">⚡ ${orb.powerDesc}</div>`
           : (orb.cat==='free'?'<div style="font-size:7px;color:rgba(200,220,255,.25);margin-top:2px;text-align:center">nessun potere</div>':'');
         const catCls=orb.cat?(' cat-'+orb.cat):'';
         return `<div class="orb-card${cardClass}${catCls}" ${cardClickable?`onclick="selectOrb('${orb.id}')"`:''}  style="${cardClickable?'':'cursor:default;'}">` + badge + `<div class="orb-preview" id="orbprev_${orb.id}"></div><div class="orb-name">${orb.name}</div><div class="orb-price" style="font-size:8px;color:${orb.cat==='earned'?'var(--gold)':'var(--dim)'}">${subtext}</div>` + progressHTML + powerBadge + `</div>`;
@@ -1649,8 +1663,29 @@ const SUPABASE_URL='https://klxlkrmnpuemglcoxuaa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtseGxrcm1ucHVlbWdsY294dWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY1NTgsImV4cCI6MjA4OTg4MjU1OH0.U4e0AgCg_VnDbv8Yx5YQhVOh9SufJEsjJxxwY4czd_4';
 const USE_LB=(SUPABASE_URL.indexOf('YOUR_PROJECT')===-1);
 async function sbFetch(path,opts={}){const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})}, ...opts});return r.json();}
-async function lbPost(name,score){if(!USE_LB)return;try{await sbFetch('drift_scores?on_conflict=name',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({name,score,ts:new Date().toISOString()})});}catch(e){}}
-async function lbGet(limit=10){if(!USE_LB)return getMockLB();try{const d=await sbFetch(`drift_scores?order=score.desc&limit=${limit}`);return Array.isArray(d)?d:getMockLB();}catch(e){return getMockLB();}}
+async function lbPost(name,score){
+  if(!USE_LB)return;
+  try{
+    // Prima cerca se esiste già un record per questo nome
+    const existing=await sbFetch(`scores?name=eq.${encodeURIComponent(name)}&select=id,score`);
+    if(Array.isArray(existing)&&existing.length>0){
+      // Aggiorna solo se il nuovo score è migliore
+      if(score>existing[0].score){
+        await sbFetch(`scores?id=eq.${existing[0].id}`,{
+          method:'PATCH',
+          body:JSON.stringify({score,orb:selectedOrbId,created_at:new Date().toISOString()})
+        });
+      }
+    } else {
+      // Inserisci nuovo record
+      await sbFetch('scores',{
+        method:'POST',
+        body:JSON.stringify({name,score,orb:selectedOrbId,country:localStorage.getItem('drift_country')||'',created_at:new Date().toISOString()})
+      });
+    }
+  }catch(e){console.log('lbPost error:',e);}
+}
+async function lbGet(limit=10){if(!USE_LB)return getMockLB();try{const d=await sbFetch(`scores?order=score.desc&limit=${limit}&select=name,score,orb,country`);return Array.isArray(d)&&d.length>0?d:getMockLB();}catch(e){console.log('lbGet error:',e);return getMockLB();}}
 const BOT_PLAYERS=[
   {name:'LYRA',   base:530, var:150},
   {name:'VEXON',  base:480, var:120},
@@ -1987,7 +2022,7 @@ const flashEl=document.getElementById('flash');
 const survivalFill=document.getElementById('survivalFill');
 const enemyCountEl=document.getElementById('enemyCountVal');
 
-const FRAMES_PER_LEVEL=420,BASE_SPEED=2.4,SPEED_PER_LEVEL=0.35,BASE_ENEMIES=3,SPAWN_INTERVAL=65;
+const FRAMES_PER_LEVEL=420,BASE_SPEED=2.4,SPEED_PER_LEVEL=0.35,BASE_ENEMIES=1,SPAWN_INTERVAL=65;
 const ENEMY_TYPES=[
   {key:'normal',rMult:.065,spdMult:1.0,color0:'#ffddcc',color1:'#ff3355',color2:'#990022',haloCols:['rgba(255,34,68,.38)','rgba(255,80,30,.12)','rgba(255,0,0,0)'],haloR:5},
   {key:'fast',  rMult:.042,spdMult:1.7,color0:'#ffeecc',color1:'#ff8800',color2:'#993300',haloCols:['rgba(255,136,0,.38)','rgba(255,80,0,.12)','rgba(255,60,0,0)'],haloR:4},
@@ -3033,6 +3068,7 @@ function update(){
     }
   }
   if(G.invincible>0)G.invincible--;
+  else if(G.frameCount<120){} // spawn protection: primi 2 secondi invulnerabile
   else{
     const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R,hitR=ORBIT_R*.13;
     for(let i=G.enemies.length-1;i>=0;i--){
@@ -3219,7 +3255,7 @@ function applyPowerup(key, px, py){
     sndSlow();
     haptic([50,30,80]);
   } else if(key==='shield'){
-    const SHIELD_DUR=30*60; // 30 secondi
+    const SHIELD_DUR=15*60; // 15 secondi
     G.activePowerup={key,timer:SHIELD_DUR,savedSpeed:null};
     G.shieldActive=true;
     showMsg('🛡 SCUDO ATTIVO!','#44aaff');
@@ -3407,6 +3443,8 @@ function drawTrail(){
 }
 function drawPlayer(){
   const x=CX+Math.cos(G.angle)*ORBIT_R,y=CY+Math.sin(G.angle)*ORBIT_R,r=ORBIT_R*.072;
+  // Spawn protection: anello visivo primi 2 secondi
+  if(G&&G.frameCount<120){const _a=1-G.frameCount/120;ctx.save();ctx.globalAlpha=_a*.5;ctx.strokeStyle='#4af0d0';ctx.lineWidth=3;ctx.setLineDash([5,5]);ctx.beginPath();ctx.arc(x,y,r+10,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
   if(G.invincible>0&&Math.floor(G.invincible/5)%2===0){ctx.save();ctx.globalAlpha=.28;}
   const orb=getOrb(selectedOrbId);
   // Aura
@@ -3544,6 +3582,23 @@ function drawOrbPowerHUD(){
   ctx.restore();
 }
 function drawPowerupHUD(){
+  // Icona power-up attivo sulla sfera
+  if(G.powerup){
+    const px2=CX+Math.cos(G.angle)*ORBIT_R;
+    const py2=CY+Math.sin(G.angle)*ORBIT_R;
+    const icons={boost:'⚡',slow:'🔮',shield:'🛡'};
+    const icon=icons[G.powerup]||'';
+    if(icon){
+      ctx.save();
+      ctx.font='16px serif';
+      ctx.textAlign='center';
+      ctx.globalAlpha=0.9;
+      const bounce=Math.sin(G.frameCount*.15)*3;
+      ctx.fillText(icon,px2,py2-ORB_R-18+bounce);
+      ctx.restore();
+    }
+  }
+
   if(!G.activePowerup)return;
   const pu=G.activePowerup;
   const secsLeft=Math.ceil(pu.timer/60);
@@ -5588,10 +5643,10 @@ function recordWeeklyScore(score){
 async function sbWeeklyPost(name,score,week){
   try{
     // Prima controlla se esiste già un record migliore
-    const existing=await sbFetch(`/rest/v1/weekly?name=eq.${encodeURIComponent(name)}&week=eq.${week}&select=score`,'GET');
+    const existing=await sbFetch(`weekly?name=eq.${encodeURIComponent(name)}&week=eq.${week}&select=score`);
     if(existing&&existing.length>0&&existing[0].score>=score) return;
     // Upsert
-    await sbFetch('/rest/v1/weekly','POST',{
+    await sbFetch('weekly',{
       name,score,week,
       orb:selectedOrbId,
       country:playerCountry||localStorage.getItem('drift_country')||''
