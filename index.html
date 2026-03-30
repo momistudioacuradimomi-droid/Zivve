@@ -2694,6 +2694,16 @@ function captureVideoClip(){
   });
 }
 
+function showPerfectDodgeToastOnly(count, bonus){
+  const old=document.getElementById('pdShareToast');if(old)old.remove();
+  const toast=document.createElement('div');
+  toast.id='pdShareToast';
+  toast.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(8,8,20,.95);border:1px solid rgba(255,229,102,.5);border-radius:8px;padding:8px 14px;z-index:99;display:flex;align-items:center;gap:8px;max-width:280px;pointer-events:none';
+  toast.innerHTML=`<span style="font-size:20px">✨</span><div><div style="font-size:12px;color:var(--gold);font-weight:700">PERFECT DODGE #${count}!</div><div style="font-size:10px;color:rgba(200,220,255,.5)">+${bonus} pt</div></div>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{if(toast.parentNode)toast.remove();},3000);
+}
+
 async function sharePerfectDodgeVideo(count, bonus){
   const videoBlob=await captureVideoClip();
   if(!videoBlob){
