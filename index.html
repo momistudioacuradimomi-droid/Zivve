@@ -1666,45 +1666,71 @@ function runHeroCanvas(){
 const SUPABASE_URL='https://klxlkrmnpuemglcoxuaa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtseGxrcm1ucHVlbWdsY294dWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY1NTgsImV4cCI6MjA4OTg4MjU1OH0.U4e0AgCg_VnDbv8Yx5YQhVOh9SufJEsjJxxwY4czd_4';
 const USE_LB=(SUPABASE_URL.indexOf('YOUR_PROJECT')===-1);
-async function sbFetch(path,opts={}){const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})}, ...opts});return r.json();}
+async function sbFetch(path, opts={}){
+  const url = SUPABASE_URL+'/rest/v1/'+path;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer '+SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+    ...(opts.headers||{})
+  };
+  const res = await fetch(url, {...opts, headers});
+  if(!res.ok){
+    const err = await res.text();
+    console.log('[SB] Error', res.status, path, err);
+    throw new Error(res.status+': '+err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
 async function lbPost(name,score){
-  if(!USE_LB)return;
+  if(!USE_LB) return;
   try{
-    // Cerca record esistente per questo nome
-    const existing=await sbFetch(`scores?name=eq.${encodeURIComponent(name)}&select=id,score&limit=1`);
-    if(Array.isArray(existing)&&existing.length>0){
-      // Esiste già — aggiorna SOLO se score migliore
-      if(score>existing[0].score){
-        await sbFetch(`scores?id=eq.${existing[0].id}`,{
-          method:'PATCH',
-          headers:{'Prefer':'return=minimal'},
-          body:JSON.stringify({score,orb:selectedOrbId})
-        });
+    console.log('[LB] Post score:', name, score);
+    // Cerca se esiste già un record per questo nome
+    const existing = await sbFetch(
+      `scores?name=eq.${encodeURIComponent(name)}&select=id,score&limit=1`
+    );
+    console.log('[LB] Existing:', existing);
+    
+    if(Array.isArray(existing) && existing.length > 0){
+      // Esiste — aggiorna solo se migliore
+      if(score > existing[0].score){
+        const patch = await sbFetch(
+          `scores?id=eq.${existing[0].id}`,
+          {method:'PATCH', body:JSON.stringify({score, orb:selectedOrbId||'cyan'})}
+        );
+        console.log('[LB] Updated:', patch);
+      } else {
+        console.log('[LB] Score non migliorato, skip');
       }
-      // Se score peggiore, non fare nulla
     } else {
-      // Primo record per questo nome
-      await sbFetch('scores',{
+      // Nuovo record
+      const insert = await sbFetch('scores', {
         method:'POST',
-        headers:{'Prefer':'return=minimal'},
         body:JSON.stringify({
-          name,score,
-          orb:selectedOrbId,
-          country:localStorage.getItem('drift_country')||''
+          name,
+          score,
+          orb: selectedOrbId||'cyan',
+          country: localStorage.getItem('drift_country')||'IT'
         })
       });
+      console.log('[LB] Inserted:', insert);
     }
-  }catch(e){console.log('lbPost error:',e);}
+  } catch(e){
+    console.log('[LB] Errore lbPost:', e);
+  }
 }
 async function lbGet(limit=10){
   if(!USE_LB) return getMockLB();
   try{
     const d=await sbFetch(`scores?order=score.desc&limit=${limit}&select=name,score,orb,country`);
+    console.log('[LB] Supabase scores:', d);
     if(Array.isArray(d)&&d.length>0) return d;
-    console.log('lbGet: Supabase vuoto, uso mock');
     return getMockLB();
   }catch(e){
-    console.log('lbGet error:',e);
+    console.log('[LB] Errore lbGet:',e);
     return getMockLB();
   }
 }
@@ -3067,9 +3093,19 @@ function update(){
   G.score=Math.floor(G.frameCount/5*_sm2);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){G.level=nl;
-    // Aggiorna velocità base ma mantieni il boost se attivo
+    // Aggiorna velocità base mantenendo i power-up attivi
     const baseSpd=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
-    if(!G.activePowerup||G.activePowerup.key!=='boost') G.speed=baseSpd;
+    if(!G.activePowerup){
+      G.speed=baseSpd;
+    } else if(G.activePowerup.key==='boost'){
+      // Boost: mantieni il moltiplicatore 1.5x sulla nuova velocità base
+      G.speed=Math.min(baseSpd*1.5, baseSpd+5);
+    } else if(G.activePowerup.key==='slow'){
+      // Slow: aggiorna savedSpeed ma mantieni la riduzione
+      G.activePowerup.savedSpeed=baseSpd;
+      // G.speed rimane rallentato tramite _sm — non toccare
+    }
+    // shield: nessun effetto sulla velocità
     G.maxEnemies=Math.min(BASE_ENEMIES+(G.level-1),15);levelBump();}
   survivalFill.style.width=((G.frameCount%FRAMES_PER_LEVEL)/FRAMES_PER_LEVEL*100)+'%';
   survivalFill.style.background=G.lives===1?'linear-gradient(90deg,#ff2244,#ff6633)':G.lives===2?'linear-gradient(90deg,#ff8800,#ffcc00)':'linear-gradient(90deg,#4af0d0,#7ec8ff)';
@@ -3366,7 +3402,7 @@ function registerHit(px,py,e){
   if(orbPowerOnHit()) return;
   // Scudo attivo: nessun danno, rimbalzo visivo
   if(G.shieldActive){
-    flashScreen('rgba(68,170,255,0.35)');
+    flashScreen('rgba(68,170,255,0.1)');
     G.rings.push({x:px,y:py,r:0,alpha:1,color:'#44aaff',grow:12});
     for(let i=0;i<15;i++){
       const a=Math.random()*Math.PI*2,sp=Math.random()*5+2;
@@ -3376,7 +3412,7 @@ function registerHit(px,py,e){
     return; // nessun danno
   }
   G.lives--;G.shaking=24;G.invincible=48;G.spawnShield=120;updateLivesUI();
-  for(let i=0;i<32;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*5+1.5;G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:55+Math.random()*20,color:i<16?'#ff2244':'#ff6633',r:Math.random()*4+1.5});}
+  for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*3+1;G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:55+Math.random()*20,color:i<16?'#ff2244':'#ff6633',r:Math.random()*4+1.5});}
   for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*3+.5;G.particles.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:35,color:'#ff8866',r:Math.random()*3+1});}
   G.rings.push({x:px,y:py,r:0,alpha:.85,color:'#ff2244',grow:10});
   flashScreen('rgba(255,34,68,0.22)');
@@ -3409,7 +3445,7 @@ function registerHit(px,py,e){
 
 function levelBump(){
   const isMajor=G.level%10===0;
-  for(let i=0;i<(isMajor?5:3);i++)setTimeout(()=>G.shockwaves.push({r:0,alpha:.3}),i*110);
+  for(let i=0;i<(isMajor?5:3);i++)setTimeout(()=>G.shockwaves.push({r:0,alpha:.15}),i*110);
   flashScreen(isMajor?'rgba(255,100,30,0.08)':'rgba(255,229,102,0.06)');
   for(let i=0;i<(isMajor?20:8);i++){
     const a=Math.random()*Math.PI*2,sp=Math.random()*(isMajor?8:4)+2;
