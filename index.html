@@ -1021,7 +1021,7 @@ const ORB_CATALOG = [
   {id:'flag_br', cat:'nations',name:'Brazil',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagBrazil(c,x,y,r), power:'carnival_rush', powerDesc:'Ogni 10 nemici schivati: +200 punti esplosivi'},
   {id:'flag_jp', cat:'nations',name:'Japan',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagJapan(c,x,y,r), power:'samurai', powerDesc:'Inversione di direzione istantanea — zero ritardo'},
   {id:'flag_cn', cat:'nations',name:'China',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagChina(c,x,y,r), power:'dragon', powerDesc:'Dopo 30s: compare un drago bonus. Schivalo per +500 pt'},
-  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:"Non puoi perdere l'ultima vita — minimo sempre 1"},
+  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:'Una volta per partita: 3s di invulnerabilità quando perdi l\'ultima vita'},
   {id:'flag_ru', cat:'nations',name:'Russia',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#ffffff','#0039a6','#d52b1e']), power:'iron_will', powerDesc:'Con 1 vita rimasta: velocità nemici -25%'},
   {id:'flag_ar', cat:'nations',name:'Argentina',     price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#74acdf','#ffffff','#74acdf']), power:'tango', powerDesc:'Ogni coppia di inversioni: la seconda vale x2 punteggio'},
   {id:'flag_in', cat:'nations',name:'India',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagIndia(c,x,y,r), power:'karma', powerDesc:'Più vite hai perso, più alto è il moltiplicatore score'},
@@ -1688,35 +1688,42 @@ async function lbPost(name,score){
   if(!USE_LB) return;
   try{
     console.log('[LB] Post score:', name, score);
-    // Cerca se esiste già un record per questo nome
+    // Cerca record esistente
     const existing = await sbFetch(
       `scores?name=eq.${encodeURIComponent(name)}&select=id,score&limit=1`
     );
     console.log('[LB] Existing:', existing);
-    
+
     if(Array.isArray(existing) && existing.length > 0){
-      // Esiste — aggiorna solo se migliore
       if(score > existing[0].score){
-        const patch = await sbFetch(
+        // DELETE vecchio + INSERT nuovo (più affidabile di PATCH)
+        await sbFetch(
           `scores?id=eq.${existing[0].id}`,
-          {method:'PATCH', body:JSON.stringify({score, orb:selectedOrbId||'cyan'})}
+          {method:'DELETE'}
         );
-        console.log('[LB] Updated:', patch);
+        const ins = await sbFetch('scores', {
+          method:'POST',
+          body:JSON.stringify({
+            name, score,
+            orb: selectedOrbId||'cyan',
+            country: localStorage.getItem('drift_country')||'IT'
+          })
+        });
+        console.log('[LB] Replace done:', ins);
       } else {
         console.log('[LB] Score non migliorato, skip');
       }
     } else {
-      // Nuovo record
-      const insert = await sbFetch('scores', {
+      // Primo record
+      const ins = await sbFetch('scores', {
         method:'POST',
         body:JSON.stringify({
-          name,
-          score,
+          name, score,
           orb: selectedOrbId||'cyan',
           country: localStorage.getItem('drift_country')||'IT'
         })
       });
-      console.log('[LB] Inserted:', insert);
+      console.log('[LB] Inserted:', ins);
     }
   } catch(e){
     console.log('[LB] Errore lbPost:', e);
@@ -2343,9 +2350,11 @@ function orbPowerOnHit(){
   }
 
   // STOIC: non puoi perdere l'ultima vita
-  if(p==='stoic'&&G.lives===1){
-    showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC — invulnerabile!','#cc4444');
-    G.invincible=2*60;
+  if(p==='stoic'&&G.lives===1&&!d.stoicUsed){
+    d.stoicUsed=true; // una sola volta per partita
+    showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC — ultima chance!','#cc4444');
+    G.invincible=3*60; // 3 secondi di grazia
+    flashScreen('rgba(200,50,50,0.2)');
     return true;
   }
 
@@ -3809,7 +3818,13 @@ async function endGame(){
   const isRec=G.score>bestScore;
   if(isRec){bestScore=G.score;localStorage.setItem('drift_best',bestScore);}
   const secs=Math.floor(G.frameCount/60);
-  if(playerName){saveMockLB(playerName,G.score);lbPost(playerName,G.score);}
+  if(playerName){
+    saveMockLB(playerName,G.score);
+    // Post su Supabase e poi ricarica classifica
+    lbPost(playerName,G.score).then(()=>{
+      setTimeout(()=>loadLB(),1500); // aspetta 1.5s poi aggiorna classifica
+    });
+  }
   maybeNotifyNearRecord(G.score);
   // Chiedi permesso notifiche dopo la 3a partita
   const gp=parseInt(localStorage.getItem('drift_games_played')||'0');
@@ -3872,7 +3887,13 @@ async function endGame(){
 // ══════════════════════════════════════
 //  LEADERBOARD UI
 // ══════════════════════════════════════
-async function loadLB(){document.getElementById('lbStatus').textContent=T('loading');const rows=await lbGet(8);renderLB(rows,'lbRows');}
+async function loadLB(){
+  document.getElementById('lbStatus').textContent=T('loading');
+  const rows=await lbGet(8);
+  // Pulisci mock se abbiamo dati reali
+  const hasReal=rows.some(r=>!['LYRA','KAON','VEXON','ZURI','ELYX','MIRA','THORN','PLEX','RIVEN','NEXO','KIRA','ARIA','ZEPH','VEGA','ORION','NOVA','AXEL','SERA'].includes(r.name));
+  renderLB(hasReal?rows:rows, 'lbRows');
+}
 
 /* showLeaderboard_dup_removed */
 function renderLB(rows,cid){const el=document.getElementById(cid);if(!rows||!rows.length){el.innerHTML=`<div id="lbStatus">Be the first!</div>`;return;}el.innerHTML=rows.map((r,i)=>{const isMe=r.name===playerName;const medal=i===0?'gold':i===1?'silver':i===2?'bronze':'';return `<div class="lb-row${isMe?' lb-me':''}"><span class="lb-rank${medal?' '+medal:''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span><span class="lb-name">${r.name}${isMe?' ◀':''}</span><span class="lb-score">${r.score}</span></div>`;}).join('');}
