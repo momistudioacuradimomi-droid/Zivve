@@ -2023,12 +2023,14 @@ function resumeGame(){
 }
 function newGame(){ hide('pauseOverlay');hide('stopOverlay');startGame(); }
 function confirmStop(){
+  window._gameActive=false;
   if(!G.running&&!G.paused)return;
   G.running=false;G.paused=false;
   show('stopOverlay');
 }
 function forceStop(){ hide('stopOverlay');G.running=false;G.paused=false;setTimeout(endGame,100); }
-function goMenu(){ hide('pauseOverlay');hide('stopOverlay');G.running=false;G.paused=false;showStart(); }
+function goMenu(){
+  window._gameActive=false; hide('pauseOverlay');hide('stopOverlay');G.running=false;G.paused=false;showStart(); }
 
 // ══════════════════════════════════════
 //  START
@@ -2155,9 +2157,11 @@ function updateOrbPower(){
   // ── DRAGON: spawna drago dopo 30s ──
   if(p==='dragon'){
     d.dragonTimer=(d.dragonTimer||0)+1;
-    if(d.dragonTimer>=30*60&&!d.dragonSpawned){
-      d.dragonSpawned=true;
-      spawnDragonBonus();
+    if(d.dragonTimer>=30*60){
+      d.dragonTimer=0; // reset per il prossimo ciclo
+      // Non spawnare se c'è già un drago attivo
+      const hasDragon=G.enemies.some(e=>e._isDragon);
+      if(!hasDragon) spawnDragonBonus();
     }
   }
 
@@ -2366,9 +2370,16 @@ function spawnDragonBonus(){
   G.enemies.push({
     x,y,vx:Math.cos(toC)*.6,vy:Math.sin(toC)*.6,
     life:0,pulsePhase:0,driftX:0,driftY:0,
-    type:{key:'dragon',rMult:.09,spdMult:.5,color0:'#fff8cc',color1:'#ffd700',color2:'#cc4400',
-          haloCols:['rgba(255,180,0,.6)','rgba(255,100,0,.2)','rgba(0,0,0,0)'],haloR:7,isDragon:true},
-    totalLife:600,_isDragon:true
+    type:{
+      key:'dragon',
+      rMult:.12,spdMult:.4,
+      color0:'#fff8cc',color1:'#ffd700',color2:'#cc4400',
+      haloCols:['rgba(255,180,0,.7)','rgba(255,100,0,.3)','rgba(0,0,0,0)'],
+      haloR:8,
+      isDragon:true,
+      isPowerup:true  // trattato come powerup — schivalo per il bonus
+    },
+    totalLife:480,_isDragon:true
   });
   showMsg('🐉 DRAGONE! Schivalo per +500!','#ffd700');
   flashScreen('rgba(255,200,0,.2)');
@@ -2399,6 +2410,7 @@ function enterFullscreen(){
 }
 function startGame(seed){
   enterFullscreen();
+  window._gameActive=true;
   if(G&&G.running)return; // già in gioco
 
   // Nascondi tutte le overlay
@@ -3047,6 +3059,20 @@ function update(){
     for(let i=G.enemies.length-1;i>=0;i--){
       const e=G.enemies[i];
       if(e.type.isPowerup){
+        // Drago: schivarlo da vicino dà +500
+        if(e._isDragon){
+          const dist=Math.hypot(px-e.x,py-e.y);
+          if(dist<hitR*2.5){
+            // Il giocatore ha schivato il drago da vicino!
+            G.enemies.splice(i,1);
+            G.score+=500;
+            showMsg('🐉 +500 DRAGO SCHIVATO!','#ffd700');
+            flashScreen('rgba(255,200,0,.25)');
+            haptic([30,10,30,10,80]);
+            sndAchievement();
+          }
+          continue;
+        }
         // Power-up collection — wider pickup radius
         const _collectR=hitR*1.6*(getOrbPower()==='powerup_magnet'?2.2:1)*(getOrbPower()==='harvest'?1.6:1);
         if(Math.hypot(px-e.x,py-e.y)<_collectR){
@@ -3057,6 +3083,7 @@ function update(){
         // (expire handled in update loop)
         continue;
       }
+      if(e._isDragon) continue; // drago: gestito sopra come powerup
       const _prec=getOrbPower()==='precision'?0.8:1;
       const eHitR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*_prec;
       const _elegR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*1.15;
@@ -3635,6 +3662,7 @@ async function endGame(){
   const isRec=G.score>bestScore;
   if(isRec){bestScore=G.score;localStorage.setItem('drift_best',bestScore);}
   const secs=Math.floor(G.frameCount/60);
+  window._gameActive=false;
   flushPendingAch(); // mostra badge accumulati durante il gioco
   if(playerName){saveMockLB(playerName,G.score);lbPost(playerName,G.score);}
   maybeNotifyNearRecord(G.score);
@@ -4487,7 +4515,7 @@ function buildLiveStats(){
 
 function showAchToast(a){
   // Durante il gioco: accoda il badge, mostralo solo al game over
-  if(G&&G.running){
+  if(window._gameActive){
     if(!window._pendingAch) window._pendingAch=[];
     window._pendingAch.push(a);
     return;
