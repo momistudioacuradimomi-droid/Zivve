@@ -2972,6 +2972,7 @@ function loop(){} // alias vuoto — non più usato direttamente
 function update(){
   if(!G||!G.running)return;
   G.frameCount++;
+  updateOrbPower(); // aggiorna poteri sfera (dragon timer, bloom, ecc)
   const _sm2=getScoreMultiplier();
   G.score=Math.floor(G.frameCount/5*_sm2);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
