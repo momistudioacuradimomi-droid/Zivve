@@ -23,7 +23,7 @@ if(!localStorage.getItem('drift_lang')){
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#03030a;--accent:#4af0d0;--accent2:#7ec8ff;--red:#ff2244;--red2:#ff6633;--gold:#ffe566;--dim:rgba(200,220,255,0.32);--white:#f0f4ff}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;touch-action:manipulation;user-select:none}
+html,body{width:100%;height:100%;height:calc(var(--vh,1vh)*100);overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;touch-action:manipulation;user-select:none}
 #shareCanvas{display:none;position:absolute;left:-9999px}
 #c{display:none;touch-action:none;position:fixed;inset:0;width:100%;height:100%}
 
@@ -31,7 +31,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 /* ── UI ── */
 #ui{position:fixed;inset:0;pointer-events:none;z-index:10}
-#scoreWrap{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center}
+#scoreWrap{position:absolute;top:52px;left:50%;transform:translateX(-50%);text-align:center}
 #scoreLbl{font-size:10px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase}
 #scoreVal{font-family:'Orbitron',sans-serif;font-size:clamp(30px,7vw,48px);font-weight:900;color:var(--white);line-height:1;text-shadow:0 0 25px rgba(126,200,255,.4);transition:transform .07s,color .07s}
 #scoreVal.pop{transform:scale(1.3);color:var(--gold);text-shadow:0 0 40px var(--gold)}
@@ -325,6 +325,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .lb-tab{flex:1;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);background:rgba(255,255,255,.03);border:none;padding:8px 4px;cursor:pointer;pointer-events:all;transition:all .2s}
 .lb-tab.active{background:rgba(74,240,208,.12);color:var(--accent);border-bottom:2px solid var(--accent)}
 </style>
+
+<script>
+function _setVH(){document.documentElement.style.setProperty('--vh',window.innerHeight*.01+'px');}
+window.addEventListener('resize',_setVH);
+window.addEventListener('orientationchange',()=>setTimeout(_setVH,200));
+_setVH();
+</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -1001,7 +1008,7 @@ const ORB_CATALOG = [
   {id:'flag_br', cat:'nations',name:'Brazil',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagBrazil(c,x,y,r), power:'carnival_rush', powerDesc:'Ogni 10 nemici schivati: +200 punti esplosivi'},
   {id:'flag_jp', cat:'nations',name:'Japan',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagJapan(c,x,y,r), power:'samurai', powerDesc:'Inversione di direzione istantanea — zero ritardo'},
   {id:'flag_cn', cat:'nations',name:'China',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagChina(c,x,y,r), power:'dragon', powerDesc:'Dopo 30s: compare un drago bonus. Schivalo per +500 pt'},
-  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:"Non puoi perdere l'ultima vita — minimo sempre 1"},
+  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:'Ultima vita: 5 secondi di invincibilità extra dopo ogni colpo'},
   {id:'flag_ru', cat:'nations',name:'Russia',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#ffffff','#0039a6','#d52b1e']), power:'iron_will', powerDesc:'Con 1 vita rimasta: velocità nemici -25%'},
   {id:'flag_ar', cat:'nations',name:'Argentina',     price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#74acdf','#ffffff','#74acdf']), power:'tango', powerDesc:'Ogni coppia di inversioni: la seconda vale x2 punteggio'},
   {id:'flag_in', cat:'nations',name:'India',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagIndia(c,x,y,r), power:'karma', powerDesc:'Più vite hai perso, più alto è il moltiplicatore score'},
@@ -2148,7 +2155,7 @@ function updateOrbPower(){
   // ── DRAGON: spawna drago dopo 30s ──
   if(p==='dragon'){
     d.dragonTimer=(d.dragonTimer||0)+1;
-    if(d.dragonTimer===30*60&&!d.dragonSpawned){
+    if(d.dragonTimer>=30*60&&!d.dragonSpawned){
       d.dragonSpawned=true;
       spawnDragonBonus();
     }
@@ -2243,11 +2250,17 @@ function orbPowerOnHit(){
     return true; // nessun danno
   }
 
-  // STOIC: non puoi perdere l'ultima vita
-  if(p==='stoic'&&G.lives===1){
-    showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC — invulnerabile!','#cc4444');
-    G.invincible=2*60;
-    return true;
+  // STOIC: 3s di invincibilità extra dopo ogni colpo (max 3 volte)
+  if(p==='stoic'){
+    const d2=G.orbPowerData||{};
+    if(!d2.stoicUses) d2.stoicUses=0;
+    if(d2.stoicUses<3){
+      d2.stoicUses++;
+      G.orbPowerData=d2;
+      showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC! ('+d2.stoicUses+'/3)','#cc4444');
+      G.invincible=3*60;
+      return true;
+    }
   }
 
   // LOVE SHIELD: 1x assorbi colpo mortale
@@ -2374,7 +2387,18 @@ function freezePulseActivate(){
   sndShield();
 }
 
+
+function enterFullscreen(){
+  const el=document.documentElement;
+  try{
+    if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+  }catch(e){}
+  window.scrollTo(0,1);
+}
 function startGame(seed){
+  enterFullscreen();
   if(G&&G.running)return; // già in gioco
 
   // Nascondi tutte le overlay
