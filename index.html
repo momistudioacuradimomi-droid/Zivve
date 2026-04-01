@@ -975,13 +975,13 @@ function buildInstructions(){
 // ══════════════════════════════════════
 const ORB_CATALOG = [
   // FREE
-  {id:'cyan',    cat:'free',  name:'Cyan',    price:0,   draw:(c,x,y,r)=>drawOrbCyan(c,x,y,r), power:'none', powerDesc:''},
-  {id:'blue',    cat:'free',  name:'Blue',    price:0,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#3388ff','#0044cc','#001188'), power:'none', powerDesc:''},
-  {id:'white',   cat:'free',  name:'White',   price:0,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffff','#ccddff','#8899bb'), power:'none', powerDesc:''},
+  {id:'cyan',    cat:'free',  name:'Cyan',    price:0,   draw:(c,x,y,r)=>drawOrbCyan(c,x,y,r), power:'none', powerDesc:'Nessun potere speciale — sfera base'},
+  {id:'blue',    cat:'free',  name:'Blue',    price:0,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#3388ff','#0044cc','#001188'), power:'none', powerDesc:'Nessun potere speciale — sfera base'},
+  {id:'white',   cat:'free',  name:'White',   price:0,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffff','#ccddff','#8899bb'), power:'none', powerDesc:'Nessun potere speciale — sfera base'},
   // FLUO (paid)
   {id:'fluo_green', cat:'fluo', name:'Fluo Green', price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ccffcc','#00ff88','#00cc44'), power:'score_boost', powerDesc:'+20% al punteggio per tutta la partita'},
-  {id:'fluo_pink',  cat:'fluo', name:'Fluo Pink',  price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffccff','#ff44ff','#aa00cc'), power:'near_miss_bonus', powerDesc:'Ogni near miss vale doppio punteggio'},
-  {id:'fluo_yellow',cat:'fluo', name:'Fluo Yellow',price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffaa','#ffee00','#cc9900'), power:'powerup_magnet', powerDesc:'I power-up si avvicinano automaticamente a te'},
+  {id:'fluo_pink',  cat:'fluo', name:'Fluo Pink',  price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffccff','#ff44ff','#aa00cc'), power:'near_miss_bonus', powerDesc:'Ogni schivata rasente vale doppio — padroneggia il rischio per dominare la classifica'},
+  {id:'fluo_yellow',cat:'fluo', name:'Fluo Yellow',price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffaa','#ffee00','#cc9900'), power:'powerup_magnet', powerDesc:'I power-up vengono attratti verso di te — non perderai mai un boost'},
   {id:'fluo_orange',cat:'fluo', name:'Fluo Orange',price:'€0.99',  draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffddaa','#ff8800','#cc4400'), power:'speed_resist', powerDesc:'Il boost velocità è controllabile — non ti travolge'},
   // SMILE (paid)
   {id:'smile',   cat:'smile', name:'Happy',   price:'€1.49', draw:(c,x,y,r)=>drawOrbEmoji(c,x,y,r,'😊'), power:'lucky_start', powerDesc:'Inizi ogni partita con uno scudo attivo'},
@@ -1000,23 +1000,23 @@ const ORB_CATALOG = [
   {id:'glitter_purple',cat:'glitter',name:'Purple',  price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#eeccff','#cc44ff','#7700cc'), power:'invincible_start', powerDesc:'Invulnerabile nei primi 8 secondi di partita'},
   {id:'glitter_rainbow',cat:'glitter',name:'Rainbow',price:'€2.49', draw:(c,x,y,r)=>drawOrbGlitterRainbow(c,x,y,r), power:'rainbow_power', powerDesc:'Power-up durano il doppio + punteggio +30%'},
   // NATIONS
-  {id:'flag_it', cat:'nations',name:'Italy',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#009246','#ffffff','#ce2b37']), power:'ferrari_speed', powerDesc:'Velocità base +15% — vai più forte di chiunque'},
+  {id:'flag_it', cat:'nations',name:'Italy',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagVertical(c,x,y,r,['#009246','#ffffff','#ce2b37']), power:'ferrari_speed', powerDesc:'Velocità base +15% — vai più forte di chiunque'},
   {id:'flag_us', cat:'nations',name:'USA',           price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUSA(c,x,y,r), power:'freedom', powerDesc:'Punteggio non cala se perdi una vita'},
   {id:'flag_es', cat:'nations',name:'Spain',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#c60b1e','#ffc400','#c60b1e']), power:'siesta', powerDesc:'Lo slow-mo dura 3 volte più a lungo'},
   {id:'flag_fr', cat:'nations',name:'France',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#002395','#ffffff','#ed2939']), power:'elegance', powerDesc:'Zona near miss più ampia del 15%'},
   {id:'flag_de', cat:'nations',name:'Germany',       price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#000000','#dd0000','#ffce00']), power:'precision', powerDesc:'Hitbox ridotta del 20% — più difficile essere colpiti'},
   {id:'flag_br', cat:'nations',name:'Brazil',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagBrazil(c,x,y,r), power:'carnival_rush', powerDesc:'Ogni 10 nemici schivati: +200 punti esplosivi'},
   {id:'flag_jp', cat:'nations',name:'Japan',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagJapan(c,x,y,r), power:'samurai', powerDesc:'Inversione di direzione istantanea — zero ritardo'},
-  {id:'flag_cn', cat:'nations',name:'China',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagChina(c,x,y,r), power:'dragon', powerDesc:'Dopo 30s: compare un drago bonus. Schivalo per +500 pt'},
-  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:'Ultima vita: 5 secondi di invincibilità extra dopo ogni colpo'},
+  {id:'flag_cn', cat:'nations',name:'China',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagChina(c,x,y,r), power:'dragon', powerDesc:'Dopo 30 secondi appare un Dragone Dorato — schivalo da vicino per guadagnare +500 punti. Rispawna ogni 30s'},
+  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:'Con la sfera UK: ogni colpo ricevuto attiva 3s di invincibilità (max 3 volte a partita)'},
   {id:'flag_ru', cat:'nations',name:'Russia',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#ffffff','#0039a6','#d52b1e']), power:'iron_will', powerDesc:'Con 1 vita rimasta: velocità nemici -25%'},
   {id:'flag_ar', cat:'nations',name:'Argentina',     price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#74acdf','#ffffff','#74acdf']), power:'tango', powerDesc:'Ogni coppia di inversioni: la seconda vale x2 punteggio'},
   {id:'flag_in', cat:'nations',name:'India',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagIndia(c,x,y,r), power:'karma', powerDesc:'Più vite hai perso, più alto è il moltiplicatore score'},
 
   // ── GUADAGNATE — si sbloccano automaticamente con gli obiettivi ──
   {id:'earn_perfect', cat:'earned', name:'✨ Perfetta',   price:0, earnedBy:'drift_perfect_dodges', earnThreshold:1,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffff','#ccddff','#4488ff'), power:'perfect_chain', powerDesc:"Perfect Dodge a catena: x2, x3, x4... moltiplicatore"},
-  {id:'earn_veteran', cat:'earned', name:'⭐ Veterana',   price:0, earnedBy:'drift_streak',         earnThreshold:7,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#aaddff','#2266aa','#001144'), power:'veteran_start', powerDesc:'Inizi al livello 3 con +200 punti di vantaggio'},
-  {id:'earn_king',    cat:'earned', name:'♛ Drift King', price:0, earnedBy:'drift_best',            earnThreshold:500, draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#fff8cc','#ffd700','#884400'), power:'king_aura', powerDesc:"Ogni 100 pt: onda d'urto che respinge tutti i nemici"},
+  {id:'earn_veteran', cat:'earned', name:'⭐ Veterana',   price:0, earnedBy:'drift_streak',         earnThreshold:7,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#aaddff','#2266aa','#001144'), power:'veteran_start', powerDesc:'Parti già al Livello 3 con 200 punti bonus — vantaggio immediato sulla classifica'},
+  {id:'earn_king',    cat:'earned', name:'♛ Zivve King', price:0, earnedBy:'drift_best',            earnThreshold:500, draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#fff8cc','#ffd700','#884400'), power:'king_aura', powerDesc:"Ogni 100 punti: onda d'urto automatica che spazza via tutti i nemici dal campo"},
 
   // ── STAGIONI (disponibili tutto l'anno, tema stagionale) ──
   {id:'s_spring', cat:'seasonal',name:'🌸 Spring',  price:'€1.49', season:'spring',  draw:(c,x,y,r)=>drawOrbSeason(c,x,y,r,'spring'), power:'bloom', powerDesc:'Ogni 30s di gioco: guarisci 1 vita (max 3)'},
@@ -1421,6 +1421,20 @@ function drawOrbGlitterRainbow(c,x,y,r){
 // ══════════════════════════════════════
 //  NATIONS ORB DRAW FUNCTIONS
 // ══════════════════════════════════════
+function drawOrbFlagVertical(c,x,y,r,stripes){
+  // 3 vertical stripes clipped to circle
+  c.save();c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.clip();
+  const w=r*2/stripes.length;
+  stripes.forEach((col,i)=>{c.fillStyle=col;c.fillRect(x-r+i*w,y-r,w+1,r*2);});
+  // Subtle sphere shading
+  const sh=c.createRadialGradient(x-r*.2,y-r*.3,0,x,y,r*1.1);
+  sh.addColorStop(0,'rgba(255,255,255,.18)');sh.addColorStop(.5,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,0,0,.28)');
+  c.fillStyle=sh;c.fillRect(x-r,y-r,r*2,r*2);
+  c.restore();
+  c.strokeStyle='rgba(255,255,255,.2)';c.lineWidth=1;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke();
+  c.fillStyle='rgba(255,255,255,.45)';c.beginPath();c.arc(x-r*.28,y-r*.32,r*.2,0,Math.PI*2);c.fill();
+}
+
 function drawOrbFlag(c,x,y,r,stripes){
   // 3 horizontal stripes clipped to circle
   c.save();c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.clip();
@@ -2211,14 +2225,20 @@ function updateOrbPower(){
     const threshold=Math.floor(G.score/100)*100;
     if(threshold>0&&threshold!==(d._lastKingThreshold||0)){
       d._lastKingThreshold=threshold;
+      // Respingi tutti i nemici
       G.enemies.forEach(e=>{
-        if(!e.type.isPowerup){
-          const dx=e.x-CX,dy=e.y-CY,dist=Math.sqrt(dx*dx+dy*dy);
-          const push=150/dist;e.vx+=dx/dist*push;e.vy+=dy/dist*push;
-        }
+        if(e.type.isPowerup||e._isDragon) return;
+        const dx=e.x-CX,dy=e.y-CY,dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+        const push=12;
+        e.vx+=(dx/dist)*push;
+        e.vy+=(dy/dist)*push;
       });
-      for(let i=0;i<3;i++) G.rings.push({x:CX,y:CY,r:i*20,alpha:.8,color:'#ffe566',grow:15});
-      flashScreen('rgba(255,200,50,.15)');
+      // Shockwave visiva
+      for(let i=0;i<4;i++) G.shockwaves.push({r:i*15,alpha:.7,grow:18,color:'#ffd700'});
+      for(let i=0;i<3;i++) G.rings.push({x:CX,y:CY,r:i*25,alpha:.9,color:'#ffe566',grow:18});
+      flashScreen('rgba(255,200,50,.2)');
+      showMsg('♛ ZIVVE KING!','#ffd700');
+      haptic([50,20,50]);
     }
   }
 
@@ -3255,7 +3275,7 @@ function applyPowerup(key, px, py){
     sndSlow();
     haptic([50,30,80]);
   } else if(key==='shield'){
-    const SHIELD_DUR=30*60; // 30 secondi
+    const SHIELD_DUR=10*60; // 30 secondi
     G.activePowerup={key,timer:SHIELD_DUR,savedSpeed:null};
     G.shieldActive=true;
     showMsg('🛡 SCUDO ATTIVO!','#44aaff');
@@ -3509,7 +3529,7 @@ function drawEnemies(){
 }
 function drawParticles(){for(const p of G.particles){ctx.save();ctx.globalAlpha=Math.max(0,p.life/60);ctx.fillStyle=p.color;ctx.shadowBlur=6;ctx.shadowColor=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore();}}
 function drawRings(){for(const r of G.rings){ctx.save();ctx.globalAlpha=r.alpha;ctx.strokeStyle=r.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x??CX,r.y??CY,r.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
-function drawShockwaves(){for(const s of G.shockwaves){ctx.save();ctx.globalAlpha=s.alpha;ctx.strokeStyle=`rgba(255,229,102,${s.alpha})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(CX,CY,s.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
+function drawShockwaves(){for(const s of G.shockwaves){ctx.save();ctx.globalAlpha=s.alpha;const sc=s.color||'rgba(255,229,102,1)';ctx.strokeStyle=sc.startsWith('#')?sc:`rgba(255,229,102,${s.alpha})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(CX,CY,s.r,0,Math.PI*2);ctx.stroke();ctx.restore();}}
 
 // ══════════════════════════════════════
 //  POWERUP HUD
@@ -4444,7 +4464,7 @@ const ACHIEVEMENTS=[
   {id:'level_20',    icon:'🔥', name:'Level 20',        desc:'Reach level 20',                      check:s=>s.bestLevel>=20,           prog:s=>[Math.min(s.bestLevel,20),20]},
   {id:'score_100',   icon:'💯', name:'Centurion',       desc:'Score 100 points',                    check:s=>s.bestScore>=100,          prog:s=>[Math.min(s.bestScore,100),100]},
   {id:'score_500',   icon:'🌟', name:'Star Drifter',    desc:'Score 500 points',                    check:s=>s.bestScore>=500,          prog:s=>[Math.min(s.bestScore,500),500]},
-  {id:'score_1000',  icon:'👑', name:'Drift King',      desc:'Score 1000 points',                   check:s=>s.bestScore>=1000,         prog:s=>[Math.min(s.bestScore,1000),1000]},
+  {id:'score_1000',  icon:'👑', name:'Zivve King',      desc:'Score 1000 points',                   check:s=>s.bestScore>=1000,         prog:s=>[Math.min(s.bestScore,1000),1000]},
   {id:'near_miss_5', icon:'💨', name:'Close Call',      desc:'Get 5 near-misses in one game',       check:s=>s.bestNearMiss>=5,         prog:s=>[Math.min(s.bestNearMiss,5),5]},
   {id:'near_miss_10',icon:'😱', name:'Living on Edge',  desc:'Get 10 near-misses in one game',      check:s=>s.bestNearMiss>=10,        prog:s=>[Math.min(s.bestNearMiss,10),10]},
   {id:'streak_3',    icon:'🔥', name:'On Fire',         desc:'Play 3 days in a row',                check:s=>s.streak>=3,               prog:s=>[Math.min(s.streak,3),3]},
