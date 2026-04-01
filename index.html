@@ -2023,7 +2023,7 @@ const flashEl=document.getElementById('flash');
 const survivalFill=document.getElementById('survivalFill');
 const enemyCountEl=document.getElementById('enemyCountVal');
 
-const FRAMES_PER_LEVEL=420,BASE_SPEED=2.4,SPEED_PER_LEVEL=0.35,BASE_ENEMIES=3,SPAWN_INTERVAL=65;
+const FRAMES_PER_LEVEL=420,BASE_SPEED=2.4,SPEED_PER_LEVEL=0.35,BASE_ENEMIES=1,SPAWN_INTERVAL=65;
 const ENEMY_TYPES=[
   {key:'normal',rMult:.065,spdMult:1.0,color0:'#ffddcc',color1:'#ff3355',color2:'#990022',haloCols:['rgba(255,34,68,.38)','rgba(255,80,30,.12)','rgba(255,0,0,0)'],haloR:5},
   {key:'fast',  rMult:.042,spdMult:1.7,color0:'#ffeecc',color1:'#ff8800',color2:'#993300',haloCols:['rgba(255,136,0,.38)','rgba(255,80,0,.12)','rgba(255,60,0,0)'],haloR:4},
@@ -3733,7 +3733,15 @@ async function endGame(){
   const secs=Math.floor(G.frameCount/60);
   window._gameActive=false;
   flushPendingAch(); // mostra badge accumulati durante il gioco
-  if(playerName){saveMockLB(playerName,G.score);lbPost(playerName,G.score);}
+  if(playerName&&playerName!=='ZIVVER'){
+    saveMockLB(playerName,G.score);
+    lbPost(playerName,G.score).then(()=>{
+      setTimeout(()=>loadLB(),2500);
+    });
+  } else if(playerName==='ZIVVER'){
+    // Nome default — salva localmente ma non in classifica globale
+    saveMockLB(playerName,G.score);
+  }
   maybeNotifyNearRecord(G.score);
   // Chiedi permesso notifiche dopo la 3a partita
   const gp=parseInt(localStorage.getItem('drift_games_played')||'0');
