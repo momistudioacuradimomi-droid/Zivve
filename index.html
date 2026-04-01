@@ -332,6 +332,29 @@ window.addEventListener('resize',_setVH);
 window.addEventListener('orientationchange',()=>setTimeout(_setVH,200));
 _setVH();
 </script>
+
+<!-- GameDistribution SDK -->
+<script>
+  window["GD_OPTIONS"] = {
+    "gameId": "37abefe8734a4912b51b63d22dc0a4a9",
+    "onEvent": function(event) {
+      switch (event.name) {
+        case "SDK_GAME_START":
+          // Riprendi il gioco dopo l'ad
+          if(typeof resumeGame === 'function') resumeGame();
+          break;
+        case "SDK_GAME_PAUSE":
+          // Metti in pausa durante l'ad
+          if(typeof pauseGame === 'function') pauseGame();
+          break;
+        case "SDK_REWARDED_WATCH_COMPLETE":
+          // Premio per ad premiato (se implementato)
+          break;
+      }
+    }
+  };
+</script>
+<script src="https://html5.api.gamedistribution.com/main.min.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -1654,8 +1677,37 @@ const SUPABASE_URL='https://klxlkrmnpuemglcoxuaa.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtseGxrcm1ucHVlbWdsY294dWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY1NTgsImV4cCI6MjA4OTg4MjU1OH0.U4e0AgCg_VnDbv8Yx5YQhVOh9SufJEsjJxxwY4czd_4';
 const USE_LB=(SUPABASE_URL.indexOf('YOUR_PROJECT')===-1);
 async function sbFetch(path,opts={}){const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...opts,headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})}});const text=await res.text();if(!res.ok){console.log('[SB]',res.status,path,text.slice(0,100));throw new Error(res.status+':'+text);}return text?JSON.parse(text):[];}
-async function lbPost(name,score){if(!USE_LB||!name)return;try{const orb=selectedOrbId||'cyan';const existing=await sbFetch('scores?name=eq.'+encodeURIComponent(name)+'&select=id,score&limit=1');if(Array.isArray(existing)&&existing.length>0){if(score<=existing[0].score)return;await sbFetch('scores?id=eq.'+existing[0].id,{method:'DELETE'});}await sbFetch('scores',{method:'POST',body:JSON.stringify({name,score,orb})});console.log('[LB] Salvato:',name,score);}catch(e){console.log('[LB] lbPost error:',e.message);}}
-async function lbGet(limit=15){if(!USE_LB)return getMockLB();try{const rows=await sbFetch('scores?order=score.desc&limit='+limit+'&select=name,score,orb');console.log('[LB] lbGet:',rows?.length);if(Array.isArray(rows)&&rows.length>0)return rows;}catch(e){console.log('[LB] lbGet error:',e.message);}return getMockLB();}
+async function lbPost(name,score){
+  if(!USE_LB||!name) return;
+  for(let _at=0;_at<3;_at++){
+    try{
+      const orb=selectedOrbId||'cyan';
+      const existing=await sbFetch('scores?name=eq.'+encodeURIComponent(name)+'&select=id,score&limit=1');
+      if(Array.isArray(existing)&&existing.length>0){
+        if(score<=existing[0].score){console.log('[LB] score non migliorato');return;}
+        await sbFetch('scores?id=eq.'+existing[0].id,{method:'DELETE'});
+      }
+      await sbFetch('scores',{method:'POST',body:JSON.stringify({name,score,orb})});
+      console.log('[LB] Salvato:',name,score,'(attempt',_at+1,')');
+      return;
+    }catch(e){
+      console.log('[LB] lbPost error attempt',_at+1,':',e.message);
+      if(_at<2) await new Promise(r=>setTimeout(r,1500));
+    }
+  }
+}
+async function lbGet(limit=15){
+  if(!USE_LB) return getMockLB();
+  for(let _at=0;_at<2;_at++){
+    try{
+      const rows=await sbFetch('scores?order=score.desc&limit='+limit+'&select=name,score,orb');
+      console.log('[LB] lbGet attempt',_at+1,':',rows?.length,'records');
+      if(Array.isArray(rows)&&rows.length>0) return rows;
+    }catch(e){console.log('[LB] lbGet error:',e.message);}
+    if(_at===0) await new Promise(r=>setTimeout(r,1000));
+  }
+  return getMockLB();
+}
 const BOT_PLAYERS=[
   {name:'ARIA',    base:480, var:120},
   {name:'NEXO',   base:340, var:100},
@@ -2428,6 +2480,16 @@ function enterFullscreen(){
   }catch(e){}
   window.scrollTo(0,1);
 }
+
+// ── GameDistribution SDK ──
+function gdShowAd(){
+  try{
+    if(typeof gdsdk !== 'undefined' && gdsdk.showAd){
+      gdsdk.showAd(gdsdk.AdType.Interstitial).catch(e=>{});
+    }
+  }catch(e){}
+}
+
 function startGame(seed){
   enterFullscreen();
   window._gameActive=true;
@@ -3005,7 +3067,22 @@ function update(){
   const _sm2=getScoreMultiplier();
   G.score=Math.floor(G.frameCount/5*_sm2);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
-  if(nl!==G.level){G.level=nl;G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;G.maxEnemies=Math.min(BASE_ENEMIES+(G.level-1),15);levelBump();}
+  if(nl!==G.level){
+    G.level=nl;
+    const baseSpd=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
+    // Non resettare speed se slow o boost attivi
+    if(!G.activePowerup){
+      G.speed=baseSpd;
+    } else if(G.activePowerup.key==='boost'){
+      G.speed=Math.min(baseSpd*1.5,baseSpd+5);
+    } else if(G.activePowerup.key==='slow'){
+      G.activePowerup.savedSpeed=baseSpd;
+      // G.speed rimane rallentato tramite _sm
+    } else {
+      G.speed=baseSpd;
+    }
+    G.maxEnemies=Math.min(BASE_ENEMIES+(G.level-1),15);levelBump();
+  }
   survivalFill.style.width=((G.frameCount%FRAMES_PER_LEVEL)/FRAMES_PER_LEVEL*100)+'%';
   survivalFill.style.background=G.lives===1?'linear-gradient(90deg,#ff2244,#ff6633)':G.lives===2?'linear-gradient(90deg,#ff8800,#ffcc00)':'linear-gradient(90deg,#4af0d0,#7ec8ff)';
   const _sm=G.slowMo>0?(G.slowMo--,.25):1;
@@ -3304,6 +3381,7 @@ function clearPowerup(){
   }
   sndPowerupEnd();
   G.activePowerup=null;
+  G.slowMo=0; // reset slow-mo quando powerup finisce
 }
 
 // ══════════════════════════════════════
@@ -3674,6 +3752,7 @@ function drawIdle(){
 // ══════════════════════════════════════
 async function endGame(){
   G.running=false;
+  gdShowAd(); // mostra ad interstitial al game over
   document.getElementById('c').style.display='none';
   trackEvent('game_end',{score:G.score,level:G.level,time:Math.floor(G.frameCount/60)});
   const isRec=G.score>bestScore;
