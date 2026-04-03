@@ -2245,16 +2245,16 @@ function orbPowerOnHit(){
     return true; // nessun danno
   }
 
-  // STOIC: max 3 usi per partita, 3s invincibilità
+  // STOIC: al colpo, 50% chance di non perdere la vita (max 2 volte)
   if(p==='stoic'){
     const d2=G.orbPowerData||{};
     if(!d2.stoicUses) d2.stoicUses=0;
-    if(d2.stoicUses<3){
+    if(d2.stoicUses<2&&Math.random()<0.5){
       d2.stoicUses++;
       G.orbPowerData=d2;
-      showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC! ('+d2.stoicUses+'/3)','#cc4444');
-      G.invincible=3*60;
-      return true;
+      showMsg('🏴󠁧󠁢󠁥󠁮󠁧󠁿 STOIC! ('+d2.stoicUses+'/2)','#cc4444');
+      G.invincible=60; // solo 1s
+      return true; // blocca il danno
     }
   }
 
@@ -2470,7 +2470,7 @@ function triggerPerfectDodge(px,py){
   orbPowerOnPerfect();
   // Dopo 2s, mostra invito condivisione
   if(pd===1||pd%5===0){
-    setTimeout(()=>{if(G&&G.running)sharePerfectDodgeVideo(pd,bonus);},2200);
+    // Banner video PD rimosso
   }
 }
 
