@@ -535,7 +535,7 @@ _setVH();
 
 <!-- LEADERBOARD -->
 <div class="overlay hidden" id="lbOverlay" style="display:none">
-  <div style="font-family:'Orbitron',sans-serif;font-size:clamp(20px,5.5vw,32px);font-weight:900;color:var(--gold);text-shadow:0 0 18px var(--gold);margin-bottom:14px;letter-spacing:.05em">🏆 TOP DRIFTERS</div>
+  <div style="font-family:'Orbitron',sans-serif;font-size:clamp(20px,5.5vw,32px);font-weight:900;color:var(--gold);text-shadow:0 0 18px var(--gold);margin-bottom:14px;letter-spacing:.05em">🏆 TOP ZIVVERS</div>
   <div class="lb-tabs">
     <button class="lb-tab active" id="lbTabWorld" onclick="switchLbTab('world')">🌍 World</button>
     <button class="lb-tab" id="lbTabCountry" onclick="switchLbTab('country')">📍 Country</button>
@@ -6033,7 +6033,12 @@ async function renderWeeklyLBTab(){
   const el=document.getElementById('lbFullRows');
   if(!el) return;
   const wk=getWeekKey();
-  const lb=await getWeeklyLB(wk);
+  let lb=await getWeeklyLB(wk);
+  // Se weekly vuota, mostra classifica mondo come fallback
+  if(!lb||lb.length===0||lb.every(r=>r.isBot)){
+    lb=await lbGet(20);
+    console.log('[WEEKLY] Usando classifica mondo come fallback');
+  }
   const secsLeft=getSecsToWeekEnd();
   const myMult=getWeeklyMultiplier();
 
