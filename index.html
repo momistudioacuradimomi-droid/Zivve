@@ -31,9 +31,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 /* ── UI ── */
 #ui{position:fixed;inset:0;pointer-events:none;z-index:10}
-#scoreWrap{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center}
+#scoreWrap{position:absolute;top:72px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
 #scoreLbl{font-size:10px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase}
-#scoreVal{font-family:'Orbitron',sans-serif;font-size:clamp(30px,7vw,48px);font-weight:900;color:var(--white);line-height:1;text-shadow:0 0 25px rgba(126,200,255,.4);transition:transform .07s,color .07s}
+#scoreVal{font-family:'Orbitron',sans-serif;font-size:clamp(22px,5vw,36px);font-weight:900;color:var(--white);line-height:1;text-shadow:0 0 25px rgba(126,200,255,.4);transition:transform .07s,color .07s}
 #scoreVal.pop{transform:scale(1.3);color:var(--gold);text-shadow:0 0 40px var(--gold)}
 #livesWrap{position:absolute;top:22px;right:14px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 #livesLbl{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
@@ -56,7 +56,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 #dangerRing{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-radius:50%;pointer-events:none;transition:all .3s;border:2px solid transparent}
 #dangerRing.active{border-color:rgba(255,34,68,.4);box-shadow:0 0 20px rgba(255,34,68,.3),inset 0 0 20px rgba(255,34,68,.1)}
 /* In-game controls bar */
-#gameControls{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;pointer-events:all;z-index:15}
+#gameControls{position:absolute;top:12px;right:10px;left:auto;transform:none;display:flex;gap:8px;pointer-events:all;z-index:15}
 .ctrl-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:16px;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
 .ctrl-btn:active,.ctrl-btn:hover{background:rgba(74,240,208,.15);border-color:rgba(74,240,208,.4);color:var(--accent)}
 .ad-slot{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:min(320px,90vw);height:50px;border:1px dashed rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.1);letter-spacing:.2em;text-transform:uppercase;border-radius:3px;pointer-events:none}
@@ -2149,9 +2149,10 @@ function updateOrbPower(){
   // ── DRAGON: spawna drago dopo 30s ──
   if(p==='dragon'){
     d.dragonTimer=(d.dragonTimer||0)+1;
-    if(d.dragonTimer===30*60&&!d.dragonSpawned){
-      d.dragonSpawned=true;
-      spawnDragonBonus();
+    if(d.dragonTimer>=30*60){
+      d.dragonTimer=0;
+      const hasDragon=G.enemies.some(e=>e._isDragon);
+      if(!hasDragon) spawnDragonBonus();
     }
   }
 
@@ -2360,8 +2361,8 @@ function spawnDragonBonus(){
   G.enemies.push({
     x,y,vx:Math.cos(toC)*.6,vy:Math.sin(toC)*.6,
     life:0,pulsePhase:0,driftX:0,driftY:0,
-    type:{key:'dragon',rMult:.09,spdMult:.5,color0:'#fff8cc',color1:'#ffd700',color2:'#cc4400',
-          haloCols:['rgba(255,180,0,.6)','rgba(255,100,0,.2)','rgba(0,0,0,0)'],haloR:7,isDragon:true},
+    type:{key:'dragon',rMult:.12,spdMult:.4,color0:'#fff8cc',color1:'#ffd700',color2:'#cc4400',
+          haloCols:['rgba(255,180,0,.8)','rgba(255,100,0,.3)','rgba(0,0,0,0)'],haloR:9,isDragon:true,isPowerup:true},
     totalLife:600,_isDragon:true
   });
   showMsg('🐉 DRAGONE! Schivalo per +500!','#ffd700');
@@ -2381,7 +2382,18 @@ function freezePulseActivate(){
   sndShield();
 }
 
+
+function enterFullscreen(){
+  const el=document.documentElement;
+  try{
+    if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  }catch(e){}
+  window.scrollTo(0,1);
+}
 function startGame(seed){
+  enterFullscreen();
+  window._inGame=true;
   if(G&&G.running)return; // già in gioco
 
   // Nascondi tutte le overlay
@@ -2955,6 +2967,7 @@ function loop(){} // alias vuoto — non più usato direttamente
 function update(){
   if(!G||!G.running)return;
   G.frameCount++;
+  updateOrbPower();
   const _sm2=getScoreMultiplier();
   G.score=Math.floor(G.frameCount/5*_sm2);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
@@ -3029,16 +3042,27 @@ function update(){
     for(let i=G.enemies.length-1;i>=0;i--){
       const e=G.enemies[i];
       if(e.type.isPowerup){
-        // Power-up collection — wider pickup radius
-        const _collectR=hitR*1.6*(getOrbPower()==='powerup_magnet'?2.2:1)*(getOrbPower()==='harvest'?1.6:1);
+        if(e._isDragon){
+          // Drago: schivarlo da vicino dà +500
+          if(Math.hypot(px-e.x,py-e.y)<hitR*3){
+            G.enemies.splice(i,1);
+            G.score+=500;
+            showMsg('🐉 +500 DRAGONE!','#ffd700');
+            flashScreen('rgba(255,200,0,.2)');
+            haptic([30,10,80]);
+          }
+          continue;
+        }
+        // Power-up collection
+        const _collectR=hitR*2.4*(getOrbPower()==='powerup_magnet'?2.2:1)*(getOrbPower()==='harvest'?1.6:1);
         if(Math.hypot(px-e.x,py-e.y)<_collectR){
           G.enemies.splice(i,1);
           applyPowerup(e.type.key,px,py);
           onFirstPowerup(e.type.key);
         }
-        // (expire handled in update loop)
         continue;
       }
+      if(e._isDragon) continue; // drago: gestito sopra
       const _prec=getOrbPower()==='precision'?0.8:1;
       const eHitR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*_prec;
       const _elegR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*1.15;
@@ -3615,6 +3639,8 @@ function drawIdle(){
 // ══════════════════════════════════════
 async function endGame(){
   G.running=false;
+  window._inGame=false;
+  setTimeout(()=>{if(window._pendingAch&&window._pendingAch.length){const b=window._pendingAch.splice(0);b.forEach((a,i)=>setTimeout(()=>_displayAchToast(a),(i+1)*1500));}},500);
   document.getElementById('c').style.display='none';
   trackEvent('game_end',{score:G.score,level:G.level,time:Math.floor(G.frameCount/60)});
   const isRec=G.score>bestScore;
@@ -4246,7 +4272,23 @@ function countdownThen(cb){
   document.getElementById('pwaManifest').href=URL.createObjectURL(mBlob);
 
   // ── Service Worker completo con push notifications ──
-  if('serviceWorker' in navigator){
+  document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    try{
+      if(audioCtx) audioCtx.suspend();
+      stopGameMusic();stopMenuMusic();
+    }catch(e){}
+  } else {
+    try{
+      if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume();
+    }catch(e){}
+  }
+});
+window.addEventListener('pagehide',()=>{
+  try{stopGameMusic();stopMenuMusic();if(audioCtx)audioCtx.suspend();}catch(e){}
+});
+
+if('serviceWorker' in navigator){
     const swCode=`
 const CACHE='zivve-v1';
 const ASSETS=['/'];
@@ -4470,6 +4512,15 @@ function buildLiveStats(){
 }
 
 function showAchToast(a){
+  // Accoda durante il gioco, mostra al game over
+  if(window._inGame){
+    if(!window._pendingAch) window._pendingAch=[];
+    window._pendingAch.push(a);
+    return;
+  }
+  _displayAchToast(a);
+}
+function _displayAchToast(a){
   document.getElementById('achToastIcon').textContent=a.icon;
   const reward=BADGE_REWARDS[a.id];
   const rewardLine=reward?.msg?`<div style="font-size:9px;color:var(--accent);margin-top:3px;letter-spacing:.06em">🎁 ${reward.msg}</div>`:'';
