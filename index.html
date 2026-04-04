@@ -2014,6 +2014,8 @@ const ENEMY_TYPES=[
   {key:'normal',rMult:.065,spdMult:1.0,color0:'#ffddcc',color1:'#ff3355',color2:'#990022',haloCols:['rgba(255,34,68,.38)','rgba(255,80,30,.12)','rgba(255,0,0,0)'],haloR:5},
   {key:'fast',  rMult:.042,spdMult:1.7,color0:'#ffeecc',color1:'#ff8800',color2:'#993300',haloCols:['rgba(255,136,0,.38)','rgba(255,80,0,.12)','rgba(255,60,0,0)'],haloR:4},
   {key:'heavy', rMult:.095,spdMult:.6, color0:'#ffcccc',color1:'#cc0044',color2:'#550011',haloCols:['rgba(200,0,60,.45)','rgba(150,0,40,.15)','rgba(100,0,20,0)'],haloR:6},
+  // BOSS — usato solo durante boss fight
+  {key:'boss',  rMult:.18, spdMult:.35,color0:'#ff88ff',color1:'#cc00cc',color2:'#550044',haloCols:['rgba(200,0,200,.6)','rgba(150,0,150,.25)','rgba(100,0,100,0)'],haloR:12,isBoss:true},
   {key:'ghost', rMult:.058,spdMult:1.1,color0:'rgba(255,200,200,.7)',color1:'rgba(200,50,80,.7)',color2:'rgba(100,0,30,.7)',haloCols:['rgba(255,100,150,.2)','rgba(200,50,80,.06)','rgba(0,0,0,0)'],haloR:5},
   // Power-ups — not enemies, special collision
   {key:'boost', rMult:.060,spdMult:.8, color0:'#ccffee',color1:'#00ffaa',color2:'#009966',haloCols:['rgba(0,255,170,.45)','rgba(0,200,130,.15)','rgba(0,150,80,0)'],haloR:5,isPowerup:true},
@@ -2401,6 +2403,91 @@ function getScoreMultiplier(){
   return mult;
 }
 
+// ══════════════════════════════════════
+//  MINI BOSS
+// ══════════════════════════════════════
+function spawnBoss(){
+  G.bossActive=true;
+  G.bossTimer=30*60; // 30 secondi a 60fps
+  G.bossLevel=G.level;
+  // Rimuovi tutti i nemici normali
+  G.enemies=G.enemies.filter(e=>e.type.isPowerup);
+  // Spawna il boss nell'angolo opposto al giocatore
+  const angle=(G.angle||0)+Math.PI;
+  const r=ORBIT_R*1.4;
+  const bossType=ENEMY_TYPES.find(t=>t.key==='boss');
+  G.enemies.push({
+    x:CX+Math.cos(angle)*r,
+    y:CY+Math.sin(angle)*r,
+    vx:Math.cos(angle+Math.PI)*.4,
+    vy:Math.sin(angle+Math.PI)*.4,
+    life:0,pulsePhase:0,driftX:0,driftY:0,
+    type:bossType,_isBoss:true
+  });
+  // Mostra messaggio
+  showMsg('👾 MINI BOSS! Sopravvivi 30s!','#cc00cc');
+  flashScreen('rgba(200,0,200,.25)');
+  haptic([100,50,100,50,200]);
+  // Blocca spawn normali
+  G.spawnTimer=-9999;
+}
+
+function updateBoss(){
+  if(!G.bossActive) return;
+  G.bossTimer--;
+  // Aggiorna HUD timer boss
+  const secsLeft=Math.ceil(G.bossTimer/60);
+  if(G.bossTimer%60===0&&secsLeft>0&&secsLeft<=10){
+    showMsg('👾 '+secsLeft+'s...','#cc00cc');
+  }
+  if(G.bossTimer<=0){
+    // CLEARED!
+    bossCleared();
+  }
+}
+
+function bossCleared(){
+  G.bossActive=false;
+  // Rimuovi il boss
+  G.enemies=G.enemies.filter(e=>!e._isBoss);
+  // +500 punti
+  G.score+=500;
+  // Scudo garantito
+  setTimeout(()=>applyPowerup('shield',CX,CY),800);
+  // Reset nemici a 1
+  G.maxEnemies=BASE_ENEMIES;
+  G.enemies=G.enemies.filter(e=>e.type.isPowerup);
+  // Messaggio vittoria
+  showMsg('💥 BOSS CLEARED! +500 🛡','#ffd700');
+  flashScreen('rgba(255,200,0,.3)');
+  haptic([50,20,50,20,100,20,200]);
+  for(let i=0;i<5;i++) G.shockwaves.push({r:i*25,alpha:.7,grow:22,color:'#ffd700'});
+  // Riprendi spawn normale dopo 2s
+  setTimeout(()=>{G.spawnTimer=0;},2000);
+}
+
+function drawBossHUD(){
+  if(!G.bossActive) return;
+  const secsLeft=Math.ceil(G.bossTimer/60);
+  const ratio=G.bossTimer/(30*60);
+  // Barra boss
+  const bw=Math.min(220,W*.6),bh=6;
+  const bx=CX-bw/2,by=H-70;
+  ctx.save();
+  ctx.globalAlpha=.3;ctx.fillStyle='#cc00cc';
+  ctx.beginPath();ctx.roundRect(bx,by,bw,bh,3);ctx.fill();
+  ctx.globalAlpha=.9;
+  const grad=ctx.createLinearGradient(bx,0,bx+bw,0);
+  grad.addColorStop(0,'#ff44ff');grad.addColorStop(1,'#cc00cc');
+  ctx.fillStyle=grad;
+  ctx.beginPath();ctx.roundRect(bx,by,bw*ratio,bh,3);ctx.fill();
+  ctx.globalAlpha=1;ctx.fillStyle='#ff88ff';
+  ctx.font='bold 11px Orbitron,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('👾 BOSS — '+secsLeft+'s',CX,by-6);
+  ctx.restore();
+}
+
 function spawnDragonBonus(){
   // Sfera speciale dorata che se schivata dà +500
   const angle=Math.random()*Math.PI*2;
@@ -2457,6 +2544,7 @@ function startGame(seed){
   }
   G={running:true,paused:false,angle:0,dir:1,speed:BASE_SPEED,
      enemies:[],particles:[],trails:[],rings:[],shockwaves:[],
+     bossActive:false,bossTimer:0,bossLevel:0,
      spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,
      lives:3,level:1,shaking:0,invincible:180,slowMo:0,
      nearMissStreak:0,_lastNearMissFrame:0,perfectDodgeCount:0,
@@ -3019,10 +3107,10 @@ function update(){
   if(!G||!G.running)return;
   G.frameCount++;
   updateOrbPower();
-  const _sm2=getScoreMultiplier();
+  updateBoss();  const _sm2=getScoreMultiplier();
   G.score=Math.floor(G.frameCount/5*_sm2);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
-  if(nl!==G.level){G.level=nl;G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;G.maxEnemies=Math.min(BASE_ENEMIES+(G.level-1),15);levelBump();}
+  if(nl!==G.level){G.level=nl;G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;G.maxEnemies=Math.min(BASE_ENEMIES+(G.level-1),15);levelBump();if(nl%10===0&&!G.bossActive)setTimeout(()=>spawnBoss(),1000);}
   survivalFill.style.width=((G.frameCount%FRAMES_PER_LEVEL)/FRAMES_PER_LEVEL*100)+'%';
   survivalFill.style.background=G.lives===1?'linear-gradient(90deg,#ff2244,#ff6633)':G.lives===2?'linear-gradient(90deg,#ff8800,#ffcc00)':'linear-gradient(90deg,#4af0d0,#7ec8ff)';
   const _sm=G.slowMo>0?(G.slowMo--,.25):1;
@@ -3030,7 +3118,7 @@ function update(){
   G.trails.push({x:CX+Math.cos(G.angle)*ORBIT_R,y:CY+Math.sin(G.angle)*ORBIT_R});
   if(G.trails.length>26)G.trails.shift();
   G.spawnTimer++;
-  if(G.spawnTimer>=SPAWN_INTERVAL&&G.enemies.length<G.maxEnemies){G.spawnTimer=0;spawnEnemy(false);}
+  if(!G.bossActive&&G.spawnTimer>=SPAWN_INTERVAL&&G.enemies.length<G.maxEnemies){G.spawnTimer=0;spawnEnemy(false);}
 
   // Power-up spawn: ogni 600-900 frame (10-15s), max 1 attivo per tipo
   if(!G.powerupTimer) G.powerupTimer=Math.max(250,500-Math.floor((G.level||1)*15))+Math.floor(Math.random()*200);
@@ -3115,7 +3203,8 @@ function update(){
         }
         continue;
       }
-      if(e._isDragon) continue; // drago: gestito sopra
+      if(e._isDragon) continue;
+      if(e._isBoss) continue; // boss: non colpisce direttamente, sopravvivi 30s
       const _prec=getOrbPower()==='precision'?0.8:1;
       const eHitR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*_prec;
       const _elegR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*1.15;
@@ -3419,7 +3508,7 @@ function draw(){
   if(!G||!G.running)return;
   ctx.clearRect(0,0,W,H);
   if(G.shaking>0){const i=G.shaking*.4;ctx.save();ctx.translate((Math.random()-.5)*i,(Math.random()-.5)*i);}
-  drawBg();drawShockwaves();drawRings();drawTrail();drawEnemies();drawPlayer();drawParticles();drawCenter();drawPowerupHUD();drawOrbPowerHUD();
+  drawBg();drawShockwaves();drawRings();drawTrail();drawEnemies();drawPlayer();drawParticles();drawCenter();drawPowerupHUD();drawOrbPowerHUD();drawBossHUD();
   if(G.shaking>0)ctx.restore();
 }
 let _stars=null;
