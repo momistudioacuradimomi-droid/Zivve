@@ -1635,7 +1635,7 @@ async function fbGet(path){const res=await fetch(FIREBASE_URL+path+'.json',{cach
 async function fbSet(path,data){const res=await fetch(FIREBASE_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!res.ok)throw new Error('FB PUT '+res.status);return res.json();}
 // sbFetch rimossa - usa Firebase
 async function lbPost(name,score){if(!USE_LB||!name||name==='ZIVVER')return;try{const orb=selectedOrbId||'cyan';const ex=await fbGet('/scores/'+encodeURIComponent(name));if(ex&&ex.score>=score){console.log('[LB] score non migliorato');return;}await fbSet('/scores/'+encodeURIComponent(name),{name,score,orb,ts:Date.now()});console.log('[LB] Salvato:',name,score);}catch(e){console.log('[LB] lbPost error:',e.message);}}
-async function lbGet(limit=15){if(!USE_LB)return getMockLB();try{const data=await fbGet('/scores');if(data){const rows=Object.values(data).filter(r=>r&&r.name&&r.score).sort((a,b)=>b.score-a.score).slice(0,limit);if(rows.length>0){try{localStorage.setItem('zivve_lb_cache',JSON.stringify({ts:Date.now(),rows}));}catch(_e){}return rows;}}}catch(e){console.log('[LB] lbGet error:',e.message);try{const cached=JSON.parse(localStorage.getItem('zivve_lb_cache')||'null');if(cached&&cached.rows&&Date.now()-cached.ts<3600000)return cached.rows;}catch(_e2){}}return getMockLB();}
+async function lbGet(limit=15){if(!USE_LB)return getMockLB();try{const data=await fbGet('/scores');if(data){const rows=Object.values(data).filter(r=>r&&r.name&&r.score).sort((a,b)=>b.score-a.score).slice(0,limit);if(rows.length>0){try{localStorage.setItem('zivve_lb_cache',JSON.stringify({ts:Date.now(),rows}));}catch(_e){}console.log('[LB] Firebase OK:',rows.length,'records');return rows;}}}catch(e){console.log('[LB] lbGet error:',e.message);try{const cached=JSON.parse(localStorage.getItem('zivve_lb_cache')||'null');if(cached&&cached.rows&&Date.now()-cached.ts<300000)return cached.rows;}catch(_e2){}}return getMockLB();}
 const BOT_PLAYERS=[
   {name:'ARIA',    base:480, var:120},
   {name:'NEXO',   base:340, var:100},
@@ -3667,7 +3667,15 @@ async function endGame(){
   const isRec=G.score>bestScore;
   if(isRec){bestScore=G.score;localStorage.setItem('drift_best',bestScore);}
   const secs=Math.floor(G.frameCount/60);
-  if(playerName){saveMockLB(playerName,G.score);lbPost(playerName,G.score);}
+  if(playerName){
+    saveMockLB(playerName,G.score);
+    // Aspetta il salvataggio su Firebase, poi ricarica la classifica
+    lbPost(playerName,G.score).then(()=>{
+      // Invalida la cache locale per forzare rilettura da Firebase
+      try{localStorage.removeItem('zivve_lb_cache');}catch(e){}
+      setTimeout(()=>loadLB(),800);
+    });
+  }
   maybeNotifyNearRecord(G.score);
   // Chiedi permesso notifiche dopo la 3a partita
   const gp=parseInt(localStorage.getItem('drift_games_played')||'0');
@@ -3721,7 +3729,7 @@ async function endGame(){
   else if(CH.mode==='async'&&CH.roomCode){ afterAsyncGame(G.score); }
   else if(CH.mode==='sync'&&CH.roomCode){ clearInterval(CH.hudPoll); updateSyncScore(G.score).then(()=>setTimeout(showSyncResult,1500)); }
   else if(CH.mode==='tournament'&&CH.roomCode){ afterTourneyRound(G.score); }
-  else { show('overOverlay'); loadLB(); applyLang(); if(!playerName)setTimeout(()=>checkName(()=>{}),600); }
+  else { show('overOverlay'); setTimeout(()=>loadLB(),1500); applyLang(); if(!playerName)setTimeout(()=>checkName(()=>{}),600); }
 
   // Always update sync score every 5s while alive (moved here from loop for perf)
   if((CH.mode==='sync')&&CH.roomCode) updateSyncScore(G.score);
