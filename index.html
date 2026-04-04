@@ -4300,7 +4300,22 @@ function countdownThen(cb){
   const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
   document.getElementById('pwaManifest').href=URL.createObjectURL(mBlob);
 
-  // ── Service Worker completo con push notifications ──
+  function showPushPrompt(){
+  if(Notification.permission==='granted'||Notification.permission==='denied') return;
+  // Chiedi permesso notifiche
+  setTimeout(()=>{
+    if(confirm('🔔 Vuoi ricevere notifiche per eventi e classifiche ZIVVE?')){
+      Notification.requestPermission().then(p=>{
+        if(p==='granted'){
+          localStorage.setItem('drift_push_enabled','1');
+          showMsg('🔔 Notifiche attivate!','#4af0d0');
+        }
+      });
+    }
+  },500);
+}
+
+// ── Service Worker completo con push notifications ──
   document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
     try{
