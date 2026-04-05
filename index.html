@@ -3288,7 +3288,7 @@ function update(){
 
     e.vx+=e.driftX;e.vy+=e.driftY;
     if(e.life%130===0){e.driftX=(Math.random()-.5)*(e._isBossShot?.08:.022);e.driftY=(Math.random()-.5)*(e._isBossShot?.08:.022);}
-    const spd=Math.hypot(e.vx,e.vy),maxSpd=(1.6+(G.level-1)*.1)*e.type.spdMult;
+    const spd=Math.hypot(e.vx,e.vy),maxSpd=(2.0+Math.min((G.level-1)*.08,2.5))*e.type.spdMult;
     if(spd>maxSpd){e.vx=(e.vx/spd)*maxSpd;e.vy=(e.vy/spd)*maxSpd;}
     if(e._frozen>0){e._frozen--;} else {e.x+=e.vx;e.y+=e.vy;}
     const dx=e.x-CX,dy=e.y-CY,dc=Math.hypot(dx,dy);
@@ -3416,7 +3416,10 @@ function spawnEnemy(scattered){
     x=CX+Math.cos(a)*r;y=CY+Math.sin(a)*r;
   }
   else{const a=Math.random()*Math.PI*2,r=ORBIT_R*(1.28+Math.random()*.35);x=CX+Math.cos(a)*r;y=CY+Math.sin(a)*r;}
-  const toC=Math.atan2(CY-y,CX-x),dir=toC+(Math.random()-.5)*Math.PI*1.1,spd=(.7+Math.random()*.9+(G.level-1)*.08)*type.spdMult;
+  // Nemici puntano verso il giocatore (non solo verso il centro)
+  const playerA=G&&G.angle?G.angle:0;
+  const px=CX+Math.cos(playerA)*ORBIT_R,py=CY+Math.sin(playerA)*ORBIT_R;
+  const toP=Math.atan2(py-y,px-x),dir=toP+(Math.random()-.5)*Math.PI*.6,spd=(1.2+Math.random()*.8+(G.level-1)*.1)*type.spdMult;
   G.enemies.push({x,y,vx:Math.cos(dir)*spd,vy:Math.sin(dir)*spd,life:0,pulsePhase:Math.random()*Math.PI*2,driftX:(Math.random()-.5)*.018,driftY:(Math.random()-.5)*.018,type});
 }
 
