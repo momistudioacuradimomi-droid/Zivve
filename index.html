@@ -995,7 +995,7 @@ const ORB_CATALOG = [
   // GLITTER
   {id:'glitter_silver',cat:'glitter',name:'Silver',  price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#ffffff','#aaccff','#c0c0c0'), power:'extra_life', powerDesc:'Parti con 4 vite invece di 3'},
   {id:'glitter_rose',  cat:'glitter',name:'Rose',    price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#ffccee','#ff66aa','#cc2266'), power:'heal_on_dodge', powerDesc:'Recuperi 1 vita se sopravvivi 60s senza perderla'},
-  {id:'glitter_gold',  cat:'glitter',name:'Gold',    price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#fffacc','#ffcc00','#cc8800'), power:'gold_trail', powerDesc:'Near miss consecutivi: +100, +200, +300... punti bonus'},
+  {id:'glitter_gold',  cat:'glitter',name:'Glitter Gold', price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#fffacc','#ffcc00','#cc8800'), power:'gold_trail', powerDesc:'Near miss consecutivi: +100, +200, +300... punti bonus'},
   {id:'glitter_cyan',  cat:'glitter',name:'Cyan',    price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#ccffff','#00ffee','#0088aa'), power:'freeze_on_hit', powerDesc:'Quando vieni colpito: nemici congelati per 2 secondi'},
   {id:'glitter_purple',cat:'glitter',name:'Purple',  price:'€1.99', draw:(c,x,y,r)=>drawOrbGlitter(c,x,y,r,'#eeccff','#cc44ff','#7700cc'), power:'invincible_start', powerDesc:'Invulnerabile nei primi 8 secondi di partita'},
   {id:'glitter_rainbow',cat:'glitter',name:'Rainbow',price:'€2.49', draw:(c,x,y,r)=>drawOrbGlitterRainbow(c,x,y,r), power:'rainbow_power', powerDesc:'Power-up durano il doppio + punteggio +30%'},
@@ -3202,20 +3202,22 @@ function update(){
   if(!G.bossActive&&G.spawnTimer>=SPAWN_INTERVAL&&G.enemies.length<G.maxEnemies){G.spawnTimer=0;spawnEnemy(false);}
 
   // Power-up spawn: ogni 600-900 frame (10-15s), max 1 attivo per tipo
-  if(!G.powerupTimer) G.powerupTimer=60+Math.floor(Math.random()*60); // 1-2 secondi al primo spawn
+  // ── POWERUP SPAWN: semplice e affidabile ──
+  if(!G.powerupTimer) G.powerupTimer=180; // primo spawn dopo 3s
   G.powerupTimer--;
   if(G.powerupTimer<=0){
-    G.powerupTimer=Math.max(60,180-Math.floor((G.level||1)*5))+Math.floor(Math.random()*60); // 1-3s
-    const hasBoost =G.enemies.some(e=>e.type.key==='boost');
-    const hasSlow  =G.enemies.some(e=>e.type.key==='slow');
-    const hasShield=G.enemies.some(e=>e.type.key==='shield');
-    // Shield: sempre priorità massima
-    if(!hasShield){
-      spawnPowerup(ENEMY_TYPES[7]); // spawn SEMPRE uno scudo se non c'è
-    } else if(!hasBoost&&!hasSlow){
-      // Solo se non c'è già uno slow/boost spawna gli altri
+    G.powerupTimer=180+Math.floor(Math.random()*120); // ogni 3-5s
+    const shieldInField=G.enemies.some(e=>e.type.key==='shield');
+    const slowInField  =G.enemies.some(e=>e.type.key==='slow');
+    const boostInField =G.enemies.some(e=>e.type.key==='boost');
+    // 70% shield, 15% slow, 15% boost — shield sempre se non c'è
+    if(!shieldInField){
+      spawnPowerup(ENEMY_TYPES[7]); // shield
+    } else {
       const _r=Math.random();
-      spawnPowerup(_r<0.4?ENEMY_TYPES[4]:ENEMY_TYPES[5]);
+      if(_r<0.5&&!slowInField) spawnPowerup(ENEMY_TYPES[5]); // slow
+      else if(!boostInField) spawnPowerup(ENEMY_TYPES[4]); // boost
+      else spawnPowerup(ENEMY_TYPES[7]); // secondo shield
     }
   }
   const boundary=ORBIT_R*1.72;
