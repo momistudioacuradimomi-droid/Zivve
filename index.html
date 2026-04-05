@@ -3262,7 +3262,7 @@ function update(){
   if(!G.powerupTimer) G.powerupTimer=240;
   G.powerupTimer--;
   if(G.powerupTimer<=0){
-    G.powerupTimer=300+Math.floor(Math.random()*120); // ogni 5-7s
+    G.powerupTimer=420+Math.floor(Math.random()*180); // ogni 7-10s
     // Conta powerup attivi per tipo
     const nShield=G.enemies.filter(e=>e.type.key==='shield').length;
     const nSlow  =G.enemies.filter(e=>e.type.key==='slow').length;
@@ -3581,7 +3581,7 @@ function clearPowerup(){
     G.slowMo=0;
     // Dopo slow: piccolo boost temporaneo +20% per 3s
     const baseSpd=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
-    G.speed=baseSpd*1.2;
+    G.speed=baseSpd*1.1;
     setTimeout(()=>{if(G&&G.running&&!G._slowActive&&(!G.activePowerup||G.activePowerup.key!=='boost'))G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;},3000);
     showMsg('💨 BACK TO SPEED!','#8833ff');
   } else if(key==='shield'){
