@@ -2690,7 +2690,7 @@ function reverseDir(){
   const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R;
   // Perfect Dodge: inversione entro 4 frame da near-miss
   const lastNM=G._lastNearMissFrame||0;
-  if((G.frameCount-lastNM)<=4&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
+  if((G.frameCount-lastNM)<=8&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
   G.dir*=-1;if(G.adapt)G.adapt.framesSinceTap=0;
   if(G.orbPower==='tango'&&G.orbPowerData) G.orbPowerData.tangoCount=(G.orbPowerData.tangoCount||0)+1;
   if(G.orbPower==='samurai') G.slowMo=Math.min((G.slowMo||0)+30,120); // +0.5s slow-mo per inversione
@@ -3385,7 +3385,7 @@ function update(){
       const d=Math.hypot(px2-e.x,py2-e.y);
       if(d<ORBIT_R*(getOrbPower()==='elegance'?0.27:0.22))nearCount++;
       const hitR2=ORBIT_R*.13*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1);
-      if(d>hitR2&&d<hitR2*2.4&&!e._nm){
+      if(d>hitR2&&d<hitR2*3.0&&!e._nm){
         e._nm=true;
         G.nearMissStreak=(G.nearMissStreak||0)+1;
         G._lastNearMissFrame=G.frameCount;
@@ -3467,9 +3467,10 @@ function spawnZigzagWave(){
   console.log('[ZAP] spawnZigzagWave level=',G.level);
   // Spawn 3 sfere zigzag in sequenza con breve delay
   const variants=[
-    {startSide:'left',  dir:'down'},
-    {startSide:'top',   dir:'right'},
-    {startSide:'right', dir:'down'},
+    {startSide:'left',  dir:'right'},
+    {startSide:'right', dir:'left'},
+    {startSide:'top',   dir:'down'},
+    {startSide:'bottom',dir:'up'},
   ];
   // Scegli una variante a caso
   const v=variants[Math.floor(Math.random()*variants.length)];
@@ -3501,6 +3502,9 @@ function spawnZigzag(startSide, mainDir, index){
   } else if(startSide==='right'){
     x=W+30; y=CY+off;
     vx=-speed; vy=0;
+  } else if(startSide==='bottom'){
+    x=CX+off; y=H+30;
+    vx=0; vy=-speed;
   } else { // top
     x=CX+off; y=-30;
     vx=0; vy=speed;
@@ -3512,13 +3516,12 @@ function spawnZigzag(startSide, mainDir, index){
     pulsePhase:Math.random()*Math.PI*2,
     driftX:0,driftY:0,
     type,
-    // Zigzag params
-    zigAmp, zigFreq,
-    mainDir,   // 'right','left','down'
+    zigAmp,zigFreq,
+    mainDir:startSide==='left'?'right':startSide==='right'?'left':startSide==='bottom'?'up':'down',
     startSide,
     isZigzag:true,
-    baseX:x, baseY:y,  // per calcolo zig relativo
-    zigPhase: index*Math.PI*.7, // sfasamento tra sfere multiple
+    baseX:x,baseY:y,
+    zigPhase:index*Math.PI*.7,
   });
 }
 
