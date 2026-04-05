@@ -140,7 +140,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .orb-card.locked{opacity:.6;cursor:default}
 .orb-card.locked:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
 .orb-preview{width:44px!important;height:44px!important;min-width:44px;min-height:44px;max-width:44px;max-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
-.orb-name{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;text-align:center;line-height:1.3}
+.orb-name{font-size:14px;letter-spacing:.12em;color:#ffe566;text-transform:uppercase;text-align:center;line-height:1.3}
 .orb-price{font-size:9px;font-weight:700;color:var(--gold);letter-spacing:.08em}
 .orb-badge{position:absolute;top:4px;right:4px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 5px;border-radius:10px;font-weight:700}
 .orb-badge.free{background:rgba(74,240,208,.2);color:var(--accent)}
@@ -1008,9 +1008,9 @@ const ORB_CATALOG = [
   {id:'flag_br', cat:'nations',name:'Brazil',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagBrazil(c,x,y,r), power:'carnival_rush', powerDesc:'Ogni 10 nemici schivati: +200 punti esplosivi'},
   {id:'flag_jp', cat:'nations',name:'Japan',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagJapan(c,x,y,r), power:'samurai', powerDesc:'Inversione di direzione istantanea — zero ritardo'},
   {id:'flag_cn', cat:'nations',name:'China',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagChina(c,x,y,r), power:'dragon', powerDesc:'Dopo 30s: compare un drago bonus. Schivalo per +500 pt'},
-  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:"Non puoi perdere l'ultima vita — minimo sempre 1"},
+  {id:'flag_gb', cat:'nations',name:'UK',            price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagUK(c,x,y,r), power:'stoic', powerDesc:'50% di probabilità di assorbire ogni colpo — max 2 volte a partita'},
   {id:'flag_ru', cat:'nations',name:'Russia',        price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#ffffff','#0039a6','#d52b1e']), power:'iron_will', powerDesc:'Con 1 vita rimasta: velocità nemici -25%'},
-  {id:'flag_ar', cat:'nations',name:'Argentina',     price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#74acdf','#ffffff','#74acdf']), power:'tango', powerDesc:'Ogni coppia di inversioni: la seconda vale x2 punteggio'},
+  {id:'flag_ar', cat:'nations',name:'Argentina',     price:'€1.49', draw:(c,x,y,r)=>drawOrbFlag(c,x,y,r,['#74acdf','#ffffff','#74acdf']), power:'tango', powerDesc:'Ogni seconda inversione di direzione: punteggio x2 per quel frame'},
   {id:'flag_in', cat:'nations',name:'India',         price:'€1.49', draw:(c,x,y,r)=>drawOrbFlagIndia(c,x,y,r), power:'karma', powerDesc:'Più vite hai perso, più alto è il moltiplicatore score'},
 
   // ── GUADAGNATE — si sbloccano automaticamente con gli obiettivi ──
@@ -2287,7 +2287,47 @@ function updateOrbPower(){
     }
   }
 
-  // ── PERFECT CHAIN: moltiplicatore catena ──
+  // ── GHOST VISION: nemici ghost completamente visibili ──
+  // (gestito in drawEnemies tramite getOrbPower check)
+
+  // ── FREEDOM: punteggio non si azzera alla perdita vita ──
+  // (gestito in hit logic)
+
+  // ── ELEGANCE: zona near miss +15% ──
+  // (gestito in triggerPerfectDodge tramite getOrbPower check)
+
+  // ── SAMURAI: inversione istantanea ──
+  // (gestito in reverseDir tramite getOrbPower check)
+
+  // ── FIRE TRAIL: +2pt per frame vicino ai nemici ──
+  if(p==='fire_trail'){
+    G.enemies.forEach(e=>{
+      if(e.type.isPowerup||e._isDragon||e._isBoss) return;
+      const px2=CX+Math.cos(G.angle)*ORBIT_R,py2=CY+Math.sin(G.angle)*ORBIT_R;
+      const dist=Math.hypot(px2-e.x,py2-e.y);
+      if(dist<ORBIT_R*.35) G.score+=2;
+    });
+  }
+
+  // ── CHRISTMAS STAR: stella ogni 20s ──
+  if(p==='christmas_star'){
+    if(!d.xmasTimer) d.xmasTimer=0;
+    d.xmasTimer++;
+    if(d.xmasTimer>=20*60){
+      d.xmasTimer=0;
+      // Spawna stella come powerup speciale
+      const a=Math.random()*Math.PI*2,r2=ORBIT_R*(1.2+Math.random()*.4);
+      G.enemies.push({x:CX+Math.cos(a)*r2,y:CY+Math.sin(a)*r2,
+        vx:Math.cos(a+Math.PI)*.4,vy:Math.sin(a+Math.PI)*.4,
+        life:0,pulsePhase:0,driftX:0,driftY:0,
+        type:{key:'xmas_star',rMult:.1,spdMult:.35,color0:'#fffde0',color1:'#ffe566',color2:'#ffaa00',
+              haloCols:['rgba(255,229,102,.7)','rgba(255,180,0,.3)','rgba(0,0,0,0)'],haloR:8,isPowerup:true,isXmasStar:true},
+        totalLife:480,_isXmasStar:true});
+      showMsg('⭐ STELLA DI NATALE!','#ffe566');
+    }
+  }
+
+    // ── PERFECT CHAIN: moltiplicatore catena ──
   if(p==='perfect_chain'){
     // gestito in triggerPerfectDodge
   }
@@ -2419,11 +2459,11 @@ function getScoreMultiplier(){
   if(p==='heatwave'&&d._hwActive) mult*=1.4;
   if(p==='karma') mult*=d.karmaMultiplier||1;
   if(p==='tango'){
-    d.tangoCount=(d.tangoCount||0)+1;
-    if(d.tangoCount%2===0) mult*=2;
+    // tangoCount incrementato in reverseDir, non qui
+    if((d.tangoCount||0)%2===0&&d.tangoCount>0) mult*=2;
   }
   mult*=getWeeklyMultiplier();
-  return mult;
+  return isNaN(mult)||mult<=0?1:mult;
 }
 
 // ══════════════════════════════════════
@@ -2605,6 +2645,7 @@ function reverseDir(){
   const lastNM=G._lastNearMissFrame||0;
   if((G.frameCount-lastNM)<=4&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
   G.dir*=-1;if(G.adapt)G.adapt.framesSinceTap=0;
+  if(G.orbPower==='tango'&&G.orbPowerData) G.orbPowerData.tangoCount=(G.orbPowerData.tangoCount||0)+1;
   G.rings.push({x:px,y:py,r:0,alpha:.7,color:'#4af0d0',grow:6});
   for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2;G.particles.push({x:px,y:py,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:22,color:'#4af0d0',r:Math.random()*2+.8});}
   sndTap();haptic(15);
@@ -3130,8 +3171,8 @@ function update(){
   if(!G||!G.running)return;
   G.frameCount++;
   updateOrbPower();
-  updateBoss();  const _sm2=getScoreMultiplier();
-  G.score=Math.floor(G.frameCount/5*_sm2);
+  updateBoss();  const _sm2=getScoreMultiplier()||1;
+  G.score=Math.floor(G.frameCount/5*(isNaN(_sm2)?1:_sm2));
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){G.level=nl;G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;G.maxEnemies=Math.min(BASE_ENEMIES+Math.floor((G.level-1)*0.5),8);levelBump();if(nl%10===0&&!G.bossActive)setTimeout(()=>spawnBoss(),1000);}
   survivalFill.style.width=((G.frameCount%FRAMES_PER_LEVEL)/FRAMES_PER_LEVEL*100)+'%';
@@ -3268,7 +3309,7 @@ function update(){
     let nearCount=0;
     for(const e of G.enemies){
       const d=Math.hypot(px2-e.x,py2-e.y);
-      if(d<ORBIT_R*.22)nearCount++;
+      if(d<ORBIT_R*(getOrbPower()==='elegance'?0.27:0.22))nearCount++;
       const hitR2=ORBIT_R*.13*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1);
       if(d>hitR2&&d<hitR2*2.4&&!e._nm){
         e._nm=true;
@@ -3647,7 +3688,7 @@ function drawPlayer(){
 function drawEnemies(){
   for(const e of G.enemies){
     const x=e.x,y=e.y,t=e.type,r=ORBIT_R*t.rMult*(1+.11*Math.sin(e.life*.17+e.pulsePhase));
-    const alpha=e.life<20?e.life/20:1,finalAlpha=t.key==='ghost'?alpha*(.5+.5*Math.sin(e.life*.08+e.pulsePhase)):alpha;
+    const alpha=e.life<20?e.life/20:1,_ghostMult=(t.key==='ghost'&&getOrbPower()==='ghost_vision'?0.95:0.5),finalAlpha=t.key==='ghost'?alpha*(_ghostMult+.5*Math.sin(e.life*.08+e.pulsePhase)):alpha;
     ctx.save();ctx.globalAlpha=finalAlpha;
     const h=ctx.createRadialGradient(x,y,0,x,y,r*t.haloR);h.addColorStop(0,t.haloCols[0]);h.addColorStop(.5,t.haloCols[1]);h.addColorStop(1,t.haloCols[2]);ctx.fillStyle=h;ctx.beginPath();ctx.arc(x,y,r*t.haloR,0,Math.PI*2);ctx.fill();
     const c=ctx.createRadialGradient(x-r*.3,y-r*.35,0,x,y,r);c.addColorStop(0,t.color0);c.addColorStop(.3,t.color1);c.addColorStop(1,t.color2);ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
@@ -5679,7 +5720,7 @@ const BADGE_REWARDS = {
              g.addColorStop(0,'#fff4aa');g.addColorStop(.3,'#ff8800');g.addColorStop(.7,'#cc2200');g.addColorStop(1,'#440000');
              c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
              c.fillStyle='rgba(255,255,200,.4)';c.beginPath();c.arc(x-r*.25,y-r*.28,r*.2,0,Math.PI*2);c.fill(); },
-           power:'score_boost', powerDesc:'+20% score + +5% per ogni giorno di streak (max +50%)' },
+           power:'score_boost', powerDesc:'50% di probabilità di assorbire ogni colpo — max 2 volte a partita' },
     msg: 'Sfera FLAME sbloccata!'
   },
   'streak_7': {
