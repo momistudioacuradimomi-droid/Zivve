@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZIVVE">
 <link rel="manifest" id="pwaManifest">
-<title>ZIVVE — Orbita. Schiva. Sopravvivi.</title>
+<title>ZIVVE — Tu sei l'ultima sfera.</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -331,7 +331,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 </head>
 <body>
 <canvas id="c"></canvas>
-<canvas id="shareCanvas" width="800" height="450"></canvas>
+<canvas id="heroCanvas" style="display:none"></canvas>
+  <canvas id="shareCanvas" width="800" height="450"></canvas>
+<div id="introOverlay" style="position:fixed;inset:0;background:#000;z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 1s ease">
+  <canvas id="introCanvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;font-family:'Orbitron',sans-serif;pointer-events:none;padding:0 24px">
+    <div id="introLine1" style="font-size:11px;letter-spacing:.5em;color:rgba(74,240,208,0);transition:color 1.5s ease;text-transform:uppercase;margin-bottom:24px">In principio era il moto.</div>
+    <div id="introLogo" style="font-size:52px;font-weight:900;color:rgba(255,255,255,0);transition:color 2s ease;letter-spacing:.2em;text-shadow:0 0 60px rgba(74,240,208,.5)">ZIVVE</div>
+    <div id="introLine2" style="font-size:11px;letter-spacing:.35em;color:rgba(74,240,208,0);transition:color 1.5s ease;text-transform:uppercase;margin-top:16px">Orbita. Schiva. Sopravvivi.</div>
+    <div id="introLine3" style="font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,0);transition:color 1.5s ease;margin-top:20px;font-family:'Rajdhani',sans-serif;font-style:italic;line-height:1.7;padding:0 20px;max-width:320px">
+      Le sfere rosse vogliono fermarti.<br>
+      Tu sei l'ultima.<br>
+      Non fermarti mai.
+    </div>
+  </div>
+  <button onclick="skipIntro()" style="position:absolute;bottom:32px;right:24px;background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.4);font-size:10px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;font-family:'Orbitron',sans-serif;border-radius:3px">SKIP</button>
+</div>
 <div id="flash"></div>
 
 <!-- UI in-game -->
@@ -421,55 +436,126 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 <!-- START -->
 <div class="overlay hidden" id="startOverlay" style="display:none">
+
+  <!-- 1. ZIVVE -->
   <div class="game-title">ZIVVE</div>
+
+  <!-- 2. Orbita. Schiva. Sopravvivi. -->
   <div class="subtitle" data-i18n="tagline">Orbita. Schiva. Sopravvivi.</div>
-  <div style="font-size:10px;color:rgba(74,240,208,.6);letter-spacing:.15em;text-transform:uppercase;margin-top:2px;text-align:center;font-family:'Orbitron',sans-serif">Momi Digital Labs</div>
-  <div style="font-size:8px;color:rgba(200,220,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-top:1px;margin-bottom:6px;text-align:center">A project by Momi Studio · Step by Step</div>
-  <div id="menuPlayerTitle" style="font-size:10px;color:var(--gold);letter-spacing:.15em;margin-bottom:4px;min-height:14px;text-align:center"></div>
 
+  <!-- 3. Brand -->
+  <div style="font-size:9px;color:rgba(74,240,208,.5);letter-spacing:.18em;text-transform:uppercase;margin-top:2px;text-align:center;font-family:'Orbitron',sans-serif">Momi Digital Labs · Step by Step</div>
+  <div id="liveCounter" style="font-size:9px;color:rgba(100,255,150,.6);letter-spacing:.06em;text-align:center;margin:3px 0;font-family:'Orbitron',sans-serif"></div>
+  <span id="sessionStreakBadge" style="display:none;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;color:#ff6600;letter-spacing:.1em"></span>
+
+  <!-- 4. Record + XP bar -->
   <div class="best-row" data-i18n-best></div>
-  <button class="btn-play" onclick="startGame()" data-i18n="play">▶ PLAY</button>
-  <div id="streakBar" style="font-size:11px;letter-spacing:.1em;color:var(--dim);margin-bottom:14px;text-align:center;min-height:28px"></div>
+  <div style="width:min(280px,80vw);margin:4px auto 2px;display:flex;align-items:center;gap:8px">
+    <span id="accountLvBadge" style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:#4af0d0;white-space:nowrap;min-width:32px">LV.1</span>
+    <span id="paragonBadge" style="display:none;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:#ffd700;white-space:nowrap;margin-left:2px"></span>
+    <div style="flex:1;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
+      <div id="xpBar" style="height:100%;width:0%;background:#4af0d0;border-radius:3px;transition:width .6s ease"></div>
+    </div>
+    <span id="xpLabel" style="font-size:9px;color:rgba(200,220,255,.5);white-space:nowrap;min-width:50px;text-align:right">0/100 XP</span>
+  </div>
+  <div id="cosmicStatus" style="font-size:10px;letter-spacing:.12em;text-align:center;margin:2px 0 4px;font-family:'Orbitron',sans-serif;color:#666">◈ Cenere</div>
+  <div id="menuPlayerTitle" style="font-size:10px;color:var(--gold);letter-spacing:.12em;margin-bottom:4px;min-height:14px;text-align:center"></div>
+  <div id="streakBar" style="font-size:11px;letter-spacing:.1em;color:var(--dim);margin-bottom:10px;text-align:center;min-height:24px"></div>
 
-  <!-- MENU PRINCIPALE: 4 bottoni grandi -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin-bottom:12px">
-    <button class="menu-btn" style="padding:16px 8px;border-color:rgba(74,240,208,.25);background:rgba(74,240,208,.04)" onclick="show('shopOverlay');hide('startOverlay')">
-      <span class="micon">🎯</span><span data-i18n="shop">Negozio Sfere</span>
-    </button>
-    <button class="menu-btn" style="padding:16px 8px" onclick="showLeaderboard()">
-      <span class="micon">🏆</span><span data-i18n="leaderboard">Classifica</span>
-    </button>
-    <button class="menu-btn" style="padding:16px 8px" onclick="showProfile()" id="profileMenuBtn">
+  <!-- 5. GIOCA -->
+  <button class="btn-play" onclick="startGame()" data-i18n="play">▶ PLAY</button>
+
+  <!-- 6. INIZIA LA SERIE (Last Zivver Standing) -->
+  <!-- Hidden event elements per compatibilità -->
+  <div id="eventMenuBtn" style="display:none"></div>
+  <span id="eventMenuIcon" style="display:none">🎪</span>
+  <span id="eventMenuLabel" style="display:none">Evento</span>
+  <button class="btn-outline" style="width:100%;max-width:300px;margin:8px 0 4px;border-color:rgba(255,34,68,.4);color:#ff8888" onclick="startLVS()">
+    👑 INIZIA LA SERIE &nbsp;<span id="lvsCountdown" style="font-size:9px;opacity:.6"></span>
+  </button>
+
+  <!-- GRIGLIA PRINCIPALE: 2 colonne -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:300px;margin-top:8px;margin-bottom:8px">
+
+    <!-- 7. Profilo utente -->
+    <button class="menu-btn" onclick="showProfile()" id="profileMenuBtn">
       <span class="micon">👤</span><span id="profileMenuName">Profilo</span>
     </button>
-    <button class="menu-btn" style="padding:16px 8px;border-color:rgba(255,100,50,.3);background:rgba(255,100,50,.05)" id="eventMenuBtn" onclick="showEventOverlay()">
-      <span class="micon" id="eventMenuIcon">🎪</span><span id="eventMenuLabel">Evento</span>
+
+    <!-- 8. Lingua -->
+    <button class="menu-btn" onclick="show('langOverlay');hide('startOverlay')">
+      <span class="micon">🌐</span><span data-i18n="language">Lingua</span>
     </button>
+
+    <!-- 9. Classifica -->
+    <button class="menu-btn" onclick="showLeaderboard()">
+      <span class="micon">🏆</span><span data-i18n="leaderboard">Classifica</span>
+    </button>
+
+    <!-- 10. Badges -->
+    <button class="menu-btn" onclick="showAchievements()">
+      <span class="micon">🏅</span><span>Badge</span>
+    </button>
+
   </div>
 
-  <!-- BOTTONE ALTRO: espande il menu secondario -->
+  <!-- BOTTONE ALTRO -->
   <button class="btn-outline" style="width:100%;max-width:300px;margin-bottom:4px" onclick="toggleSecondaryMenu()">
     ⋯ Altro
   </button>
 
-  <!-- MENU SECONDARIO: nascosto di default -->
+  <!-- MENU SECONDARIO -->
   <div id="secondaryMenu" style="display:none;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:300px;margin-top:6px">
-    <button class="menu-btn" onclick="show('howOverlay');hide('startOverlay')"><span class="micon">📖</span><span data-i18n="howToPlay">Come Giocare</span></button>
-    <button class="menu-btn" style="border-color:rgba(255,229,102,.25);background:rgba(255,229,102,.04)" onclick="openChallenge()"><span class="micon">⚔️</span><span>Challenge</span></button>
-    <button class="menu-btn" style="border-color:rgba(74,240,208,.25);background:rgba(74,240,208,.04)" onclick="startDailyChallenge()"><span class="micon">📅</span><span>Daily</span></button>
-    <button class="menu-btn" style="border-color:rgba(255,136,0,.25);background:rgba(255,136,0,.04)" onclick="show('survivalOverlay');hide('startOverlay');updateSurvivalBest()"><span class="micon">♾</span><span>Survival</span></button>
-    <button class="menu-btn" onclick="showAchievements()"><span class="micon">🏅</span><span>Badge</span></button>
-    <button class="menu-btn" onclick="showReplay()"><span class="micon">▶</span><span>Replay</span></button>
-    <button class="menu-btn" onclick="show('langOverlay');hide('startOverlay')"><span class="micon">🌐</span><span data-i18n="language">Lingua</span></button>
-    <button class="menu-btn" style="grid-column:span 2;border-color:rgba(255,229,102,.2);background:rgba(255,229,102,.04)" onclick="showReferralPanel()"><span class="micon">⚔️</span><span>Sfida un Amico</span></button>
-    <a class="menu-btn" href="https://t.me/+h1n4REci1sthOGJk" target="_blank" style="text-decoration:none;border-color:rgba(0,136,204,.4);background:rgba(0,136,204,.07)"><span class="micon">✈️</span><span>Telegram</span></a>
-    <a class="menu-btn" href="https://discord.gg/guH9fZTKp" target="_blank" style="text-decoration:none;border-color:rgba(88,101,242,.4);background:rgba(88,101,242,.07)"><span class="micon">💬</span><span>Discord</span></a>
+
+    <!-- Come giocare -->
+    <button class="menu-btn" onclick="show('howOverlay');hide('startOverlay')">
+      <span class="micon">📖</span><span data-i18n="howToPlay">Come Giocare</span>
+    </button>
+
+    <!-- Negozio sfere -->
+    <button class="menu-btn" style="border-color:rgba(74,240,208,.25);background:rgba(74,240,208,.04)" onclick="show('shopOverlay');hide('startOverlay')">
+      <span class="micon">🎯</span><span data-i18n="shop">Negozio Sfere</span>
+    </button>
+
+    <!-- Daily -->
+    <button class="menu-btn" style="border-color:rgba(74,240,208,.25);background:rgba(74,240,208,.04)" onclick="startDailyChallenge()">
+      <span class="micon">📅</span><span>Daily</span>
+    </button>
+
+    <!-- Challenge -->
+    <button class="menu-btn" style="border-color:rgba(255,229,102,.25);background:rgba(255,229,102,.04)" onclick="openChallenge()">
+      <span class="micon">⚔️</span><span>Challenge</span>
+    </button>
+
+    <!-- Survival -->
+    <button class="menu-btn" style="border-color:rgba(255,136,0,.25);background:rgba(255,136,0,.04)" onclick="show('survivalOverlay');hide('startOverlay');updateSurvivalBest()">
+      <span class="micon">♾</span><span>Survival</span>
+    </button>
+
+    <!-- Replay -->
+    <button class="menu-btn" onclick="showReplay()">
+      <span class="micon">▶</span><span>Replay</span>
+    </button>
+
+    <!-- Sfida un amico -->
+    <button class="menu-btn" style="grid-column:span 2;border-color:rgba(255,229,102,.2);background:rgba(255,229,102,.04)" onclick="shareChallengeLink()">
+      <span class="micon">⚔️</span><span>Sfida un Amico</span>
+    </button>
+
+    <!-- Community -->
+    <button class="menu-btn" style="grid-column:span 2;border-color:rgba(74,240,208,.3);background:rgba(74,240,208,.05)" onclick="showCommunityScreen()">
+      <span class="micon">🌐</span><span>Community</span>
+    </button>
+
   </div>
 </div>
 
 <!-- HOW TO PLAY -->
 <div class="overlay hidden" id="howOverlay" style="display:none">
   <div class="instr-title" data-i18n="howToPlay">HOW TO PLAY</div>
+  <div style="font-size:10px;color:rgba(74,240,208,.55);letter-spacing:.1em;text-align:center;margin:-4px 0 12px;font-style:italic;padding:0 16px;line-height:1.6">
+    "Prima della luce, esisteva solo il moto.<br>Le sfere rosse vogliono fermarti.<br>Tu sei l'ultima. Non fermarti mai."
+  </div>
   <div class="instr-sub" data-i18n="readCarefully">Read carefully</div>
   <div class="instr-body" id="instrBody"></div>
   <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;color:var(--gold);letter-spacing:.12em;text-align:center;margin:18px 0 10px;text-shadow:0 0 16px var(--gold)">⭐ LA REGOLA D'ORO — NON MORIRE! ⭐</div>
@@ -512,6 +598,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   </div>
   <!-- Confronto settimanale -->
   <div id="goWeeklyCtx" style="font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:8px;text-align:center;min-height:16px"></div>
+  <div id="goXPProgress" style="width:100%;max-width:280px;margin:0 auto 6px;padding:0 12px"></div>
+  <div id="bounceBackBanner" style="display:none;font-family:'Orbitron',sans-serif;font-size:11px;text-align:center;color:#ffd700;margin:0 auto 4px;padding:5px 16px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.2);border-radius:6px;max-width:280px"></div>
+  <div id="rivalDisplay" style="display:none;font-family:'Orbitron',sans-serif;font-size:11px;text-align:center;color:rgba(200,220,255,.8);margin:0 auto 8px;padding:5px 16px;background:rgba(255,64,136,.07);border:1px solid rgba(255,64,136,.18);border-radius:6px;max-width:280px"></div>
   <!-- Motivazione -->
   <div id="goMotivation" style="font-size:12px;color:rgba(200,220,255,.6);margin-bottom:12px;text-align:center;min-height:16px;letter-spacing:.04em"></div>
   <!-- Leaderboard -->
@@ -519,7 +608,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <!-- Azioni -->
   <div class="btn-row">
     <button class="btn-play" onclick="startGame()" data-i18n="again">↺ ANCORA</button>
-    <button class="btn-outline" style="margin-top:0" onclick="showReplay()">▶ Replay</button>
+    <button class="btn-outline" id="replayBtn" style="margin-top:0;opacity:.4" onclick="showReplay()">▶ Replay</button>
   </div>
   <button class="btn-outline" onclick="toggleShare()">⬆ Condividi</button>
   <div class="share-box" id="shareBox">
@@ -677,7 +766,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap" id="profileStatsTop"></div>
     <!-- Stats grid completa -->
     <div class="stat-grid" id="profileStats"></div>
-    <div style="font-size:10px;color:var(--dim);text-align:center;letter-spacing:.1em;margin-bottom:8px" id="achProgress"></div>
+    <div style="font-size:10px;color:var(--dim);text-align:center;letter-spacing:.1em;margin-bottom:8px" id="achProgress2"></div>
     <button class="btn-outline" style="width:100%;max-width:320px;color:rgba(255,80,80,.6);border-color:rgba(255,80,80,.2)" onclick="resetProfile()">🗑 Reset Statistiche</button>
   </div>
 
@@ -1048,7 +1137,41 @@ const CAT_LABELS = {
 let selectedOrbId = localStorage.getItem('drift_orb')||'cyan';
 // Tester: tutte le sfere per i nomi nella lista
 const TESTER_NAMES=["D4NTE", "DANTE", "JO", "SAMUELE", "ALEX", "ALEXVV", "ANDREA", "MARCELLO", "GIOVANNI", "RUBEN", "HAZE", "MEHR", "ZELTAX", "GANDOLEIRO", "KYLIOS", "SORA", "LILTR3", "MOL", "URBY", "HI", "JYFT", "ADSF", "HUMANG", "MOMI"];
-const ALL_ORB_IDS=["cyan","blue","white","fluo_green","fluo_pink","fluo_yellow","fluo_orange","smile","cool","fire","alien","gold","diamond","galaxy","glitter_silver","glitter_rose","glitter_gold","glitter_cyan","glitter_purple","glitter_rainbow","flag_it","flag_us","flag_es","flag_fr","flag_de","flag_br","flag_jp","flag_cn","flag_gb","flag_ru","flag_ar","flag_in","earn_perfect","earn_veteran","earn_king","s_spring","s_summer","s_autumn","s_winter","ev_natale","ev_pasqua","ev_carnevale","ev_halloween","ev_capodanno","ev_sanvalentino","first_game","survivor_30","survivor_120","level_10","level_20","score_100","score_500","score_1000","near_miss_5","near_miss_10","streak_3","streak_7","games_10","games_50","challenge_win","daily_10","survival_10","orb_buyer","all_free","zigzag_lived","speed_demon","ghost_hunt","last_stand","edge_rider","heavy_rain","bullet_hell","perfect_run","level_rush","endurance","zigzag_master","raw_skills","triple_threat","comeback","solo_orbit","boost_rush","easter_hunt","nova","endurance","ghost_touch","prestige","legend","ghost_touch","flame","duel","legend","prestige","champion","weekly_champ","weekly_silver","weekly_bronze","weekly_top10","weekly_part"];
+
+// ══════════════════════════════════════════════════════════════
+//  TESTER MODE — accesso illimitato per i tester
+// ══════════════════════════════════════════════════════════════
+function isTester(){
+  const name=(localStorage.getItem('drift_name')||'').toUpperCase();
+  return TESTER_NAMES.includes(name);
+}
+function testerUnlockAll(){
+  if(!isTester()) return;
+  // Tutte le sfere
+  const merged=[...new Set([...ownedOrbs,...ALL_ORB_IDS])];
+  ownedOrbs=merged;
+  localStorage.setItem('drift_owned',JSON.stringify(merged));
+  // Battle Pass attivo
+  localStorage.setItem('zivve_bp_'+getBPMonth(),'1');
+  // Starter Pack attivo
+      // XP: LV.100 + P10 (P1+...+P10 = 55 * 5000 = 275000)
+      if(getAccountXP()<500000) setAccountXP(500000);
+  // Tutti i temi campo sbloccati
+  BG_THEMES.forEach(t=>localStorage.setItem('zivve_bg_unlocked_'+t.id,'1'));
+  // Ghost vision permanente
+  localStorage.setItem('zivve_ghost_vision_earned','1');
+  // Modalità inversa sbloccata
+  localStorage.setItem('zivve_inverse_unlocked','1');
+  // Intro già vista
+  localStorage.setItem('zivve_intro_seen','1');
+  // Nessun popup pagamento
+  localStorage.setItem('zivve_sp_dismissed','1');
+  // Aggiorna UI
+  updateXPBar();
+  if(typeof buildShop==='function') buildShop();
+}
+
+const ALL_ORB_IDS=["cyan","blue","white","fluo_green","fluo_pink","fluo_yellow","fluo_orange","smile","cool","fire","alien","gold","diamond","galaxy","glitter_silver","glitter_rose","glitter_gold","glitter_cyan","glitter_purple","glitter_rainbow","flag_it","flag_us","flag_es","flag_fr","flag_de","flag_br","flag_jp","flag_cn","flag_gb","flag_ru","flag_ar","flag_in","earn_perfect","earn_veteran","earn_king","s_spring","s_summer","s_autumn","s_winter","ev_natale","ev_pasqua","ev_carnevale","ev_halloween","ev_capodanno","ev_sanvalentino","first_game","survivor_30","survivor_120","level_10","level_20","score_100","score_500","score_1000","near_miss_5","near_miss_10","streak_3","streak_7","games_10","games_50","challenge_win","daily_10","survival_10","orb_buyer","all_free","zigzag_lived","speed_demon","ghost_hunt","last_stand","edge_rider","heavy_rain","bullet_hell","perfect_run","level_rush","endurance","zigzag_master","raw_skills","triple_threat","comeback","solo_orbit","boost_rush","easter_hunt","nova","endurance","ghost_touch","prestige","legend","ghost_touch","flame","duel","legend","prestige","champion","weekly_champ","weekly_silver","weekly_bronze","weekly_top10","weekly_part","pulse_orb"];
 let ownedOrbs=(()=>{
   const saved=JSON.parse(localStorage.getItem('drift_owned')||'["cyan","blue","white"]');
   const name=(localStorage.getItem('drift_name')||'').toUpperCase();
@@ -1061,7 +1184,7 @@ let ownedOrbs=(()=>{
 })();let tempSelectedOrbId = selectedOrbId;
 
 function getOrb(id){ return ORB_CATALOG.find(o=>o.id===id)||ORB_CATALOG[0]; }
-function isOwned(id){
+function isOwned(id){if(isTester())return true;
   const orb=getOrb(id);
   if(!orb)return false;
   // Sfere 'earned': si sbloccano automaticamente raggiungendo la soglia
@@ -1165,7 +1288,7 @@ function buildShop(){
         else if(festBadge==='locked_time'){ badge='<span class="orb-badge" style="background:rgba(255,100,50,.2);color:#ff8844">⏰</span>'; cardClass=' locked'; cardClickable=false; }
         else if(orb.price===0){ badge='<span class="orb-badge free">'+T('free')+'</span>'; cardClass=''; }
         else { badge='<span class="orb-badge premium">'+(orb.cat==='festivity'?'🎉':T('premium'))+'</span>'; cardClass=' locked'; }
-        const subtext=!owned?(orb.cat==='earned'?earnLabel:festBadge==='locked_time'?getEventWindowLabel(orb.eventId):orb.price===0?'':price):'';
+        const subtext=isTester()?'':!owned?(orb.cat==='earned'?earnLabel:festBadge==='locked_time'?getEventWindowLabel(orb.eventId):orb.price===0?'':price):'';
         const powerBadge=orb.power&&orb.power!=='none'
           ? `<div style="font-size:11px;color:#4af0d0;letter-spacing:.02em;line-height:1.4;margin-top:3px;text-align:center;padding:2px 4px">⚡ ${orb.powerDesc}</div>`
           : (orb.cat==='free'?'<div style="font-size:7px;color:rgba(200,220,255,.25);margin-top:2px;text-align:center">nessun potere</div>':'');
@@ -1216,7 +1339,7 @@ function buildShop(){
 
 function selectOrb(id){
   const orb=getOrb(id);
-  if(!isOwned(id)){
+  if(!isOwned(id)&&!isTester()){
     // Festività bloccata fuori finestra
     if(orb.cat==='festivity'&&!getFestivityWindow(orb.eventId)){
       alert(`⏰ Questa sfera è disponibile solo durante: ${getEventWindowLabel(orb.eventId)}\nTorna in quel periodo per aggiungerla alla tua collezione!`);
@@ -1875,6 +1998,214 @@ function stopDriftMelody(){
   if(_melodyInterval){clearInterval(_melodyInterval);_melodyInterval=null;}
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  ZIVVE OST — Colonna Sonora Originale
+//  Firma: 5 note D-F#-A-D-F# (arpeggio Dm/D cosmico)
+//  Tempo: 128 BPM
+// ══════════════════════════════════════════════════════════════
+const ZIVVE_BPM=128;
+const ZIVVE_BEAT=60/ZIVVE_BPM; // 0.469s per beat
+// Scale: D minor pentatonic D-F-G-A-C + blue note
+const ZIVVE_SCALE=[146.83,174.61,196,220,261.63,293.66,329.63,349.23,392,440,523.25,587.33];
+// Firma ZIVVE: arpeggio identitario
+const ZIVVE_SIGNATURE=[146.83,185,220,293.66,370]; // D-F#-A-D-F#
+
+let _zOST={active:false,nodes:[],tensionLevel:0,bossMode:false};
+let _zBeat=0,_zBeatT=null,_zPadT=null,_zLeadT=null,_zArpT=null;
+
+// ── Nota singola con inviluppo ──
+function _zNote(freq,start,dur,vol,type,dst){
+  try{
+    const ac=getAudio();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type||'sine';o.frequency.value=freq;
+    o.connect(g);g.connect(dst||bgGain);
+    g.gain.setValueAtTime(0,start);
+    g.gain.linearRampToValueAtTime(vol,start+Math.min(0.02,dur*.15));
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001,vol*.3),start+dur*.7);
+    g.gain.linearRampToValueAtTime(0.0001,start+dur);
+    o.start(start);o.stop(start+dur+0.05);
+  }catch(e){}
+}
+
+// ── Kick sintetico ──
+function _zKick(t){
+  try{
+    const ac=getAudio();
+    const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();
+    o.type='sine';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(40,t+0.08);
+    f.type='lowpass';f.frequency.value=200;
+    o.connect(f);f.connect(g);g.connect(bgGain);
+    g.gain.setValueAtTime(0.7,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    o.start(t);o.stop(t+0.2);
+  }catch(e){}
+}
+
+// ── Hi-hat sintetico ──
+function _zHat(t,vol){
+  try{
+    const ac=getAudio();
+    const buf=ac.createBuffer(1,ac.sampleRate*.05,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const src=ac.createBufferSource(),g=ac.createGain(),f=ac.createBiquadFilter();
+    f.type='highpass';f.frequency.value=8000;
+    src.buffer=buf;src.connect(f);f.connect(g);g.connect(bgGain);
+    g.gain.setValueAtTime(vol||0.04,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+    src.start(t);
+  }catch(e){}
+}
+
+// ── PAD cosmico (chord pad) ──
+function _zPad(freqs,start,dur,vol){
+  freqs.forEach(f=>_zNote(f,start,dur,vol||0.04,'sine'));
+  freqs.forEach(f=>_zNote(f*2,start+0.01,dur,vol*.3||0.012,'triangle'));
+}
+
+// ── LEAD melody ──
+const _zMelody=[
+  [0,220],[0.5,293.66],[1,261.63],[1.5,196],[2,220],
+  [2.5,246.94],[3,293.66],[3.5,261.63],[4,220],[4.5,196],
+  [5,174.61],[5.5,196],[6,220],[6.5,246.94],[7,293.66]
+];
+let _zMelIdx=0;
+
+function _zLeadBar(){
+  if(!_zOST.active) return;
+  try{
+    const ac=getAudio();
+    const barDur=ZIVVE_BEAT*4;
+    const notes=_zMelody.slice(_zMelIdx,_zMelIdx+4);
+    notes.forEach(([offset,freq])=>{
+      const vol=_zOST.tensionLevel>1?0.09:0.06;
+      _zNote(freq*(_zOST.bossMode?2:1),ac.currentTime+offset*ZIVVE_BEAT,ZIVVE_BEAT*0.7,vol,'triangle');
+    });
+    _zMelIdx=(_zMelIdx+4)%(_zMelody.length-3);
+    _zLeadT=setTimeout(_zLeadBar,barDur*1000);
+  }catch(e){}
+}
+
+// ── BEAT loop 128 BPM ──
+function _zBeatBar(){
+  if(!_zOST.active) return;
+  try{
+    const ac=getAudio();
+    const b=ZIVVE_BEAT;
+    // Kick su 1 e 3
+    _zKick(ac.currentTime);
+    _zKick(ac.currentTime+b*2);
+    // Hat ogni 8th
+    for(let i=0;i<8;i++) _zHat(ac.currentTime+b*i*.5, i%2===0?0.055:0.03);
+    // Snare su 2 e 4 (noise burst)
+    [b,b*3].forEach(t=>{
+      const buf=ac.createBuffer(1,ac.sampleRate*.07,ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length*.8);
+      const src=ac.createBufferSource(),g=ac.createGain(),f=ac.createBiquadFilter();
+      f.type='bandpass';f.frequency.value=3000;f.Q.value=0.8;
+      src.buffer=buf;src.connect(f);f.connect(g);g.connect(bgGain);
+      g.gain.setValueAtTime(0.12,ac.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+t+0.07);
+      src.start(ac.currentTime+t);
+    });
+    _zBeatT=setTimeout(_zBeatBar,b*4*1000);
+  }catch(e){}
+}
+
+// ── PAD loop ogni 2 battute ──
+function _zPadBar(){
+  if(!_zOST.active) return;
+  try{
+    const ac=getAudio();
+    const chords=[
+      [110,146.83,174.61,220],  // Dm
+      [130.81,164.81,196,261.63], // Cm
+      [123.47,155.56,185,246.94], // Bm7b5
+      [110,138.59,164.81,220],  // Dm add9
+    ];
+    const chord=chords[_zBeat%chords.length];
+    _zPad(chord,ac.currentTime,ZIVVE_BEAT*8,0.035+_zOST.tensionLevel*0.01);
+    _zBeat++;
+    _zPadT=setTimeout(_zPadBar,ZIVVE_BEAT*8*1000);
+  }catch(e){}
+}
+
+// ── FIRMA ZIVVE (intro + ogni cambio livello) ──
+function _zPlaySignature(vol){
+  try{
+    const ac=getAudio();
+    ZIVVE_SIGNATURE.forEach((freq,i)=>{
+      _zNote(freq,ac.currentTime+i*ZIVVE_BEAT*.5,ZIVVE_BEAT*.8,vol||0.1,'triangle');
+      // Ottava superiore in eco
+      _zNote(freq*2,ac.currentTime+i*ZIVVE_BEAT*.5+0.04,ZIVVE_BEAT*.6,vol*.3||0.03,'sine');
+    });
+  }catch(e){}
+}
+
+// ── CONTROLLO TENSIONE (cresce con il livello) ──
+function _zSetTension(level){
+  if(!_zOST.active) return;
+  _zOST.tensionLevel=Math.min(3,Math.floor(level/5));
+  // BPM aumenta leggermente con tensione — già gestito via timeout
+}
+
+// ── BOSS MODE ──
+function _zBossMode(on){
+  _zOST.bossMode=on;
+  if(on){
+    // Tremolo su tutti i suoni — aggiunge urgenza
+    try{
+      const ac=getAudio();
+      // Burst di note discendenti
+      [440,392,349,329,293].forEach((f,i)=>{
+        _zNote(f,ac.currentTime+i*0.1,0.15,0.12,'sawtooth');
+      });
+    }catch(e){}
+  }
+}
+
+// ── START / STOP OST ──
+function startZivveOST(){
+  stopZivveOST();
+  _zOST.active=true;_zOST.tensionLevel=0;_zOST.bossMode=false;_zBeat=0;
+  // Firma all'avvio
+  _zPlaySignature(0.08);
+  // Poi parte il loop dopo la firma (5 note × 0.5 beat × 0.469s ≈ 1.2s)
+  setTimeout(()=>{
+    if(!_zOST.active) return;
+    _zBeatBar();
+    setTimeout(_zPadBar,ZIVVE_BEAT*500);
+    setTimeout(_zLeadBar,ZIVVE_BEAT*2000);
+  },1200);
+}
+function stopZivveOST(){
+  _zOST.active=false;
+  clearTimeout(_zBeatT);clearTimeout(_zPadT);clearTimeout(_zLeadT);clearTimeout(_zArpT);
+}
+
+// ── JINGLE MENU (versione ambient della firma) ──
+function startZivveMenuTheme(){
+  stopZivveMenuTheme();
+  _zMenuActive=true;
+  _zMenuLoop();
+}
+let _zMenuActive=false,_zMenuT=null;
+function stopZivveMenuTheme(){ _zMenuActive=false; clearTimeout(_zMenuT); }
+function _zMenuLoop(){
+  if(!_zMenuActive) return;
+  try{
+    const ac=getAudio();
+    // Arpeggio lento della firma
+    ZIVVE_SIGNATURE.forEach((freq,i)=>{
+      _zNote(freq*.5,ac.currentTime+i*0.7,1.2,0.04,'triangle');
+    });
+    // Pad sottile
+    _zPad([55,73.4,87,110],ac.currentTime,4,0.02);
+    _zMenuT=setTimeout(_zMenuLoop,4200);
+  }catch(e){}
+}
+
 function startGameMusic(){
   stopMenuMusic();_gameActive=true;
   clearTimeout(_bassT);clearTimeout(_shimT);
@@ -1988,13 +2319,7 @@ function saveName(forced){
   playerName=v;
   localStorage.setItem('drift_name',v);
   localStorage.setItem('drift_name_set','1');
-  // Sblocca tutte le sfere se tester
-  if(TESTER_NAMES.includes(v.toUpperCase())){
-    const merged=[...new Set([...ownedOrbs,...ALL_ORB_IDS])];
-    ownedOrbs=merged;
-    localStorage.setItem('drift_owned',JSON.stringify(merged));
-    buildShop();
-  }
+  testerUnlockAll(); // sblocca tutto se tester
   // Carica inventario da Firebase al login
   loadInventoryFromFirebase(v);
   hide('nameOverlay');
@@ -2105,7 +2430,19 @@ function applyOrbPower(){
   if(p==='nova_shield')       { G.novaHits=2; } // assorbe 2 colpi prima vita
   if(p==='invincible_start')  { G.orbShieldFrames=8*60; }
   if(p==='lucky_start')       { setTimeout(()=>applyPowerup('shield',CX,CY),300); }
-  if(p==='veteran_start')     { G.score+=200; G.level=3; G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL; G.maxEnemies=BASE_ENEMIES+2; updateLevelUI(); }
+  if(p==='veteran_start'){
+    if(!G._veteranApplied){
+      G._veteranApplied=true;
+      // Offset frameCount per partire dal livello 3
+      G.frameCount=2*FRAMES_PER_LEVEL;
+      G.scoreBonus=(G.scoreBonus||0)+200;
+      G.speed=BASE_SPEED+2*SPEED_PER_LEVEL;
+      G.maxEnemies=Math.min(BASE_ENEMIES+2,10);
+      G.level=3;
+      updateLevelUI();
+      showMsg('⚔️ VETERANO — Livello 3 +200pt!','#ffcc44');
+    }
+  }
   if(p==='endurance_start')   { G.orbShieldFrames=10*60; } // 10s invulnerabile
   if(p==='ferrari_speed')     { G.speed*=1.15; }
   if(p==='glitter_purple_init'){ G.orbShieldFrames=8*60; }
@@ -2317,7 +2654,7 @@ function updateOrbPower(){
       if(e.type.isPowerup||e._isDragon||e._isBoss) return;
       const px2=CX+Math.cos(G.angle)*ORBIT_R,py2=CY+Math.sin(G.angle)*ORBIT_R;
       const dist=Math.hypot(px2-e.x,py2-e.y);
-      if(dist<ORBIT_R*.35) G.score+=2;
+      if(dist<ORBIT_R*.35) G.scoreBonus=(G.scoreBonus||0)+2;
     });
   }
 
@@ -2336,6 +2673,38 @@ function updateOrbPower(){
               haloCols:['rgba(255,229,102,.7)','rgba(255,180,0,.3)','rgba(0,0,0,0)'],haloR:8,isPowerup:true,isXmasStar:true},
         totalLife:480,_isXmasStar:true});
       showMsg('⭐ STELLA DI NATALE!','#ffe566');
+    }
+  }
+
+    // ── PULSE POWER: respinge nemici vicini ogni 2s ──
+  if(p==='pulse_power'){
+    if(!d.pulseTimer) d.pulseTimer=0;
+    d.pulseTimer++;
+    if(d.pulseTimer>=120){ // ogni 2s
+      d.pulseTimer=0;
+      const px3=CX+Math.cos(G.angle)*ORBIT_R,py3=CY+Math.sin(G.angle)*ORBIT_R;
+      G.enemies.forEach(e=>{
+        if(e.type.isPowerup||e._isBoss) return;
+        const dx=e.x-px3,dy=e.y-py3,dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+        if(dist<ORBIT_R*.8){e.vx+=(dx/dist)*6;e.vy+=(dy/dist)*6;}
+      });
+      G.rings.push({x:CX+Math.cos(G.angle)*ORBIT_R,y:CY+Math.sin(G.angle)*ORBIT_R,r:0,alpha:.5,color:'#ff2244',grow:8});
+    }
+  }
+
+    // ── PULSE POWER: onda di respinta ogni 2s ──
+  if(p==='pulse_power'){
+    if(!d.pulseTimer) d.pulseTimer=0;
+    d.pulseTimer++;
+    if(d.pulseTimer>=120){
+      d.pulseTimer=0;
+      const _ppx=CX+Math.cos(G.angle)*ORBIT_R,_ppy=CY+Math.sin(G.angle)*ORBIT_R;
+      G.enemies.forEach(e=>{
+        if(e.type.isPowerup||e._isBoss) return;
+        const dx=e.x-_ppx,dy=e.y-_ppy,dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+        if(dist<ORBIT_R*.9){e.vx+=(dx/dist)*5;e.vy+=(dy/dist)*5;}
+      });
+      G.rings.push({x:CX+Math.cos(G.angle)*ORBIT_R,y:CY+Math.sin(G.angle)*ORBIT_R,r:0,alpha:.5,color:'#ff2244',grow:9});
     }
   }
 
@@ -2415,7 +2784,7 @@ function orbPowerOnNearMiss(){
   const d=G.orbPowerData||{};
 
   // NEAR MISS BONUS: vale doppio
-  if(p==='near_miss_bonus') G.score+=5;
+  if(p==='near_miss_bonus') G.scoreBonus=(G.scoreBonus||0)+Math.floor(5*(typeof getParagonPowerBonus==='function'?getParagonPowerBonus():1));
 
   // GOLD TRAIL: catena near miss
   if(p==='gold_trail'){
@@ -2464,7 +2833,7 @@ function getScoreMultiplier(){
   if(p==='score_boost'){
     // Flame orb: +20% base + 5% per ogni giorno di streak
     const _streak=parseInt(localStorage.getItem('drift_streak')||'0');
-    mult*=1.2+Math.min(_streak*.05,.5);
+    mult*=(1.2+Math.min(_streak*.05,.5))*(typeof getParagonPowerBonus==='function'?getParagonPowerBonus():1);
   }
   if(p==='double_score'&&G.level>=5) mult*=2;
   if(p==='rainbow_power') mult*=1.3;
@@ -2476,6 +2845,9 @@ function getScoreMultiplier(){
     if((d.tangoCount||0)%2===0&&d.tangoCount>0) mult*=2;
   }
   mult*=getWeeklyMultiplier();
+  // Bonus Paragon
+  const _pBonus=typeof getParagonScoreBonus==='function'?getParagonScoreBonus():0;
+  mult*=(1+_pBonus);
   return isNaN(mult)||mult<=0?1:mult;
 }
 
@@ -2506,6 +2878,7 @@ function spawnBoss(){
   haptic([100,50,100,50,200]);
   // Blocca spawn normali
   G.spawnTimer=-9999;
+  try{_zBossMode(true);}catch(e){}
 }
 
 function updateBoss(){
@@ -2559,7 +2932,7 @@ function bossCleared(){
   // Rimuovi il boss
   G.enemies=G.enemies.filter(e=>!e._isBoss&&!e._isBossShot);
   // +500 punti
-  G.score+=500;
+  G.scoreBonus=(G.scoreBonus||0)+500;
   // Scudo garantito
   setTimeout(()=>applyPowerup('shield',CX,CY),800);
   // Reset nemici a 1
@@ -2570,8 +2943,8 @@ function bossCleared(){
   flashScreen('rgba(255,200,0,.3)');
   haptic([50,20,50,20,100,20,200]);
   for(let i=0;i<5;i++) G.shockwaves.push({r:i*25,alpha:.7,grow:22,color:'#ffd700'});
-  // Riprendi spawn normale dopo 2s
   setTimeout(()=>{G.spawnTimer=0;},2000);
+  try{_zBossMode(false);}catch(e){}
 }
 
 function drawBossHUD(){
@@ -2653,7 +3026,7 @@ function startGame(seed){
   G={running:true,paused:false,angle:0,dir:1,speed:BASE_SPEED,
      enemies:[],particles:[],trails:[],rings:[],shockwaves:[],
      bossActive:false,bossTimer:0,bossLevel:0,
-     spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,
+     spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,scoreBonus:0,
      lives:3,level:1,shaking:0,invincible:180,slowMo:0,
      nearMissStreak:0,_lastNearMissFrame:0,perfectDodgeCount:0,
      survivedZigzag:false,survivedZigzagCount:0,survivalMode:false,
@@ -2667,19 +3040,133 @@ function startGame(seed){
   setTimeout(()=>{if(G&&G.running)spawnPowerup(ENEMY_TYPES[7]);},3000);
   applyOrbPower(); // attiva potere sfera
   updateLivesUI();updateLevelUI();
-  try{getAudio();stopMenuMusic();stopDriftMelody();startGameMusic();}catch(e){}
+  try{getAudio();stopMenuMusic();stopDriftMelody();stopZivveMenuTheme();startGameMusic();startZivveOST();}catch(e){}
+  // Avvia registrazione video
+  setTimeout(startFullGameRecording, 200);
   document.getElementById('c').style.display='block';
   setTimeout(startGameRecording,500); // avvia registrazione
   if(G.level===1) setTimeout(detectPerformance,1000);
 }
-function showStart(){
+
+function showBattlePassScreen(){
+  const has=hasBattlePass()||isTester();
+  const month=getBPMonth();
+  const daysLeft=getSeasonDaysLeft();
+  let html='<div style="font-family:Orbitron,sans-serif;text-align:center;padding:16px">';
+  html+='<div style="font-size:11px;letter-spacing:.3em;color:#ffd700;margin-bottom:8px">⭐ BATTLE PASS '+month+'</div>';
+  html+='<div style="font-size:13px;color:rgba(200,220,255,.7);margin-bottom:16px">'+daysLeft+' giorni rimasti</div>';
+  if(has){
+    html+='<div style="color:#4af0d0;font-size:14px;font-weight:700;margin-bottom:12px">✅ ATTIVO — XP x1.5</div>';
+  } else {
+    html+='<div style="color:#ffd700;font-size:22px;font-weight:900;margin-bottom:4px">€2.99/mese</div>';
+    html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:16px">XP x1.5 · Sfera esclusiva · Badge</div>';
+    const bpBtn=document.createElement('button');bpBtn.textContent='ACQUISTA';bpBtn.style.cssText='background:linear-gradient(135deg,#ffd700,#ff8800);color:#000;border:none;border-radius:6px;padding:12px 24px;font-weight:900;font-size:13px;cursor:pointer;letter-spacing:.1em;font-family:Orbitron,sans-serif';bpBtn.onclick=()=>window.open(BATTLE_PASS_PRICE,'_blank');html+='<div id="bpBtnSlot"></div>';
+  }
+  html+='</div>';
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.95);z-index:200;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML=html+'<button id="bpCloseBtn" style="position:absolute;top:16px;right:16px;background:none;border:none;color:rgba(255,255,255,.5);font-size:24px;cursor:pointer">×</button>';
+  const slot=overlay.querySelector('#bpBtnSlot');if(slot&&typeof bpBtn!=='undefined')slot.replaceWith(bpBtn);
+  overlay.querySelector('#bpCloseBtn').onclick=()=>overlay.remove();
+  document.body.appendChild(overlay);
+//OLD:" style="position:absolute;top:16px;right:16px;background:none;border:none;color:rgba(255,255,255,.5);font-size:24px;cursor:pointer">×</button>';
+  document.body.appendChild(overlay);
+}
+
+
+function showBgThemeScreen(){
+  const unlocked=isTester()?BG_THEMES:getUnlockedBgThemes();
+  const current=getCurrentBgTheme().id;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:12px;font-family:Orbitron,sans-serif;overflow-y:auto';
+  let html='<div style="font-size:11px;letter-spacing:.3em;color:#4af0d0;margin-bottom:8px">🎨 TEMA CAMPO</div>';
+  html+='<div style="font-size:10px;color:rgba(200,220,255,.5);margin-bottom:16px">Sbloccati con il livello account</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px">';
+  BG_THEMES.forEach(function(t){
+    const isUnlocked=unlocked.some(function(u){return u.id===t.id;});
+    const isCurrent=t.id===current;
+    const borderCol=isCurrent?'#4af0d0':'rgba(255,255,255,.1)';
+    const opac=isUnlocked?'1':'.4';
+    const icon=isUnlocked?'✅':'🔒';
+    const onclk=isUnlocked?
+      "setBgTheme('"+t.id+"');this.closest('div').parentElement.remove()":
+      "showMsg('Sblocca al livello "+t.unlockLv+"!','#ff4488')";
+    html+='<div onclick="'+onclk+'" style="background:rgba(255,255,255,.04);border:1.5px solid '+borderCol+';border-radius:6px;padding:12px;cursor:pointer;text-align:center;opacity:'+opac+'">'+
+      '<div style="font-size:14px;margin-bottom:4px">'+icon+'</div>'+
+      '<div style="font-size:11px;color:#fff;font-weight:700">'+t.name+'</div>'+
+      '<div style="font-size:9px;color:rgba(200,220,255,.5)">LV.'+t.unlockLv+'+</div></div>';
+  });
+  html+='</div>';
+  div.innerHTML=html;
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='← CHIUDI';closeBtn.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px;margin-top:8px';
+  closeBtn.onclick=()=>div.remove();
+  div.appendChild(closeBtn);
+  document.body.appendChild(div);
+}
+
+
+function showCommunityScreen(){
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;font-family:Orbitron,sans-serif';
+  div.innerHTML='<div style="font-size:11px;letter-spacing:.3em;color:#4af0d0;margin-bottom:4px">🌐 COMMUNITY</div>'+
+    '<div style="font-size:10px;color:rgba(200,220,255,.5);margin-bottom:8px">Unisciti alla community ZIVVE</div>';
+  const links=[
+    {icon:'✈️',name:'Telegram',sub:'Canale ufficiale',url:'https://t.me/+h1n4REci1sthOGJk',color:'rgba(0,136,204,.5)'},
+    {icon:'💬',name:'Discord',sub:'Server ufficiale',url:'https://discord.gg/guH9fZTKp',color:'rgba(88,101,242,.5)'},
+    {icon:'🤖',name:'Reddit',sub:'r/zivve',url:'https://www.reddit.com/r/zivve/',color:'rgba(255,69,0,.5)'},
+  ];
+  links.forEach(l=>{
+    const a=document.createElement('a');
+    a.href=l.url;a.target='_blank';
+    a.style.cssText='display:flex;align-items:center;gap:14px;width:100%;max-width:280px;background:rgba(255,255,255,.04);border:1.5px solid '+l.color+';border-radius:8px;padding:14px 18px;text-decoration:none;';
+    a.innerHTML='<span style="font-size:26px">'+l.icon+'</span>'+
+      '<div><div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.08em">'+l.name+'</div>'+
+      '<div style="color:rgba(200,220,255,.5);font-size:10px;margin-top:2px">'+l.sub+'</div></div>';
+    div.appendChild(a);
+  });
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='← CHIUDI';
+  closeBtn.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.15em;margin-top:8px';
+  closeBtn.onclick=()=>div.remove();
+  div.appendChild(closeBtn);
+  document.body.appendChild(div);
+}
+
+
+// ── SESSION STREAK ──
+if(!window._sessionStreak) window._sessionStreak=0;
+function incrementSessionStreak(){
+  window._sessionStreak++;
+  updateSessionStreakDisplay();
+  if(window._sessionStreak===3) showMsg('🔥 3 PARTITE DI FILA!','#ff6600');
+  else if(window._sessionStreak===5) showMsg('⚡ 5 PARTITE DI FILA — SEI IN ZONA!','#ff8800');
+  else if(window._sessionStreak===10) showMsg('👑 10 PARTITE — NON TI FERMI MAI!','#ffd700');
+}
+function updateSessionStreakDisplay(){
+  const el=document.getElementById('sessionStreakBadge');
+  if(!el) return;
+  if(window._sessionStreak>=3){
+    el.style.display='inline-block';
+    el.textContent=window._sessionStreak>=10?'👑 x'+window._sessionStreak:
+                   window._sessionStreak>=5 ?'⚡ x'+window._sessionStreak:
+                                              '🔥 x'+window._sessionStreak;
+  } else el.style.display='none';
+}
+
+function showStart(){updateXPBar();try{getKingRivalryText();}catch(e){}
   hideAll();
   show('startOverlay');
+  // Ferma registrazione PRIMA di nascondere il canvas
+  stopFullGameRecording();
   document.getElementById('c').style.display='none';
+  document.getElementById('c').style.filter='none';
+  if(G) G._lastLifeMode=false;
   stopGameRecording();
+  stopFullGameRecording();
   applyLang();
   updateStreakDisplay();
-  if(audioCtx){try{stopGameMusic();startMenuMusic();}catch(e){}}
+  if(audioCtx){try{stopGameMusic();stopZivveOST();startMenuMusic();startZivveMenuTheme();}catch(e){}}
 }
 
 // ══════════════════════════════════════
@@ -2692,7 +3179,8 @@ function reverseDir(){
   // Perfect Dodge: inversione entro 4 frame da near-miss
   const lastNM=G._lastNearMissFrame||0;
   if((G.frameCount-lastNM)<=8&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
-  G.dir*=-1;if(G.adapt)G.adapt.framesSinceTap=0;
+  const _tapDir=G._penaltyInvert>0?1:-1; // invertito se penalità attiva
+  G.dir*=_tapDir;if(G.adapt)G.adapt.framesSinceTap=0;
   if(G.orbPower==='tango'&&G.orbPowerData) G.orbPowerData.tangoCount=(G.orbPowerData.tangoCount||0)+1;
   if(G.orbPower==='samurai') G.slowMo=Math.min((G.slowMo||0)+30,120); // +0.5s slow-mo per inversione
   G.rings.push({x:px,y:py,r:0,alpha:.7,color:'#4af0d0',grow:6});
@@ -2703,7 +3191,17 @@ function triggerPerfectDodge(px,py){
   G.dir*=-1;if(G.adapt)G.adapt.framesSinceTap=0;
   G.slowMo=90;
   G.perfectDodgeCount=(G.perfectDodgeCount||0)+1;
-  const bonus=50*(G._perfectMult||1)*G.perfectDodgeCount;G.score+=bonus;
+  // Moltiplicatore: x1 → x2 → x4 → x8
+  const _oldMult=G._perfectMult||1;
+  G._perfectMult=G.perfectDodgeCount>=9?8:G.perfectDodgeCount>=6?4:G.perfectDodgeCount>=3?2:1;
+  if(G._perfectMult>_oldMult) showMsg('🔥 MOLTIPLICATORE x'+G._perfectMult+'!','#ffe566');
+  // Achievement: 10 PD in una partita → ghost vision permanente sbloccata
+  if(G.perfectDodgeCount===10){
+    localStorage.setItem('zivve_ghost_vision_earned','1');
+    showMsg('🏆 GHOST VISION SBLOCCATA PERMANENTEMENTE!','#8833ff');
+    flashScreen('rgba(136,51,255,.3)');
+  }
+  const bonus=50*(G._perfectMult||1)*G.perfectDodgeCount;G.scoreBonus=(G.scoreBonus||0)+bonus;
   for(let i=0;i<55;i++){
     const a=Math.random()*Math.PI*2,sp=Math.random()*9+3;
     G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
@@ -3220,14 +3718,23 @@ function update(){
   if(!G||!G.running)return;
   G.frameCount++;
   updateOrbPower();
-  updateBoss();  const _sm2=getScoreMultiplier()||1;
-  G.score=Math.floor(G.frameCount/5*(isNaN(_sm2)?1:_sm2));
+  updateBoss();  const _sm2=(getScoreMultiplier()||1)*(typeof getParagonScoreBonus==='function'?getParagonScoreBonus():1);
+  G.score=Math.floor(G.frameCount/5*(isNaN(_sm2)?1:_sm2))+(G.scoreBonus||0);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){
     G.level=nl;
     G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
-    G.maxEnemies=Math.min(BASE_ENEMIES+Math.floor((G.level-1)*0.7),10);
+    // Flow design: picchi e respiri
+// Livelli "respiro" (multipli di 5 non boss): meno nemici
+const _isBreath=(G.level%5===0&&G.level%10!==0);
+const _isPeak=(G.level%10===1); // livello dopo boss: picco graduale
+const _baseMax=BASE_ENEMIES+Math.floor((G.level-1)*0.7);
+G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
     levelBump();
+    if(nl===20&&!localStorage.getItem('zivve_inverse_unlocked')){
+      localStorage.setItem('zivve_inverse_unlocked','1');
+      setTimeout(()=>showMsg('🔓 MODALITÀ INVERSA SBLOCCATA!','#ff8844'),1500);
+    }
     if(nl%10===0&&!G.bossActive){
       // Prima zigzag (500ms), poi boss (5000ms — dopo che zigzag è finito)
       setTimeout(()=>{
@@ -3309,7 +3816,8 @@ function update(){
 
     e.vx+=e.driftX;e.vy+=e.driftY;
     if(e.life%130===0){e.driftX=(Math.random()-.5)*(e._isBossShot?.08:.022);e.driftY=(Math.random()-.5)*(e._isBossShot?.08:.022);}
-    const spd=Math.hypot(e.vx,e.vy),maxSpd=(2.0+Math.min((G.level-1)*.08,2.5))*e.type.spdMult;
+    const _freezeMult=G._penaltyFreeze>0?2.0:1;
+    const spd=Math.hypot(e.vx,e.vy),maxSpd=(2.0+Math.min((G.level-1)*.08,2.5))*e.type.spdMult*_freezeMult;
     if(spd>maxSpd){e.vx=(e.vx/spd)*maxSpd;e.vy=(e.vy/spd)*maxSpd;}
     if(e._frozen>0){e._frozen--;} else {e.x+=e.vx;e.y+=e.vy;}
     const dx=e.x-CX,dy=e.y-CY,dc=Math.hypot(dx,dy);
@@ -3330,10 +3838,22 @@ function update(){
           // Drago: schivarlo da vicino dà +500
           if(Math.hypot(px-e.x,py-e.y)<hitR*3){
             G.enemies.splice(i,1);
-            G.score+=500;
+            G.scoreBonus=(G.scoreBonus||0)+500;
             showMsg('🐉 +500 DRAGONE!','#ffd700');
             flashScreen('rgba(255,200,0,.2)');
             haptic([30,10,80]);
+          }
+          continue;
+        }
+        if(e._isBlackOrb){
+          if(Math.hypot(px-e.x,py-e.y)<hitR*2.5){
+            G.enemies.splice(i,1);
+            G.lives=Math.min(G.lives+3,6);
+            updateLivesUI();
+            showMsg('⚫ +3 VITE — SFERA MISTERIOSA!','#ffffff');
+            flashScreen('rgba(255,255,255,.4)');
+            haptic([100,50,100,50,200]);
+            localStorage.setItem('zivve_black_orb_found','1');
           }
           continue;
         }
@@ -3349,7 +3869,8 @@ function update(){
       if(e._isDragon) continue;
       if(e._isBoss) continue; // boss: non colpisce direttamente, sopravvivi 30s
       const _prec=getOrbPower()==='precision'?0.8:1;
-      const eHitR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*_prec;
+      const _bigHitMult=G._penaltyBigHit>0?1.8:1;
+  const eHitR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*_prec*_bigHitMult;
       const _elegR=hitR*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1)*1.15;
       const _dist=Math.hypot(px-e.x,py-e.y);
       // Near miss elegance zone
@@ -3394,7 +3915,7 @@ function update(){
         onFirstNearMiss();
         const sa=Math.atan2(py2-e.y,px2-e.x);
         for(let k=0;k<6;k++){const a2=sa+(.5-Math.random())*1.2;G.particles.push({x:px2,y:py2,vx:Math.cos(a2)*3,vy:Math.sin(a2)*3,life:18,color:'#ffee44',r:1.5});}
-        if(G.nearMissStreak>=3){showMsg('🔥 NEAR MISS x'+G.nearMissStreak,'#ffee44');if(G.nearMissStreak%3===0)G.score+=G.nearMissStreak*2;}
+        if(G.nearMissStreak>=3){showMsg('🔥 NEAR MISS x'+G.nearMissStreak,'#ffee44');if(G.nearMissStreak%3===0)G.scoreBonus=(G.scoreBonus||0)+G.nearMissStreak*2;}
         const angle2=Math.atan2(py2-e.y,px2-e.x);
         sndNearMiss(600+Math.cos(angle2)*200+(G.nearMissStreak||1)*40);
       } else if(d>hitR2*3){e._nm=false;}
@@ -3558,6 +4079,7 @@ function applyPowerup(key, px, py){
     G.activePowerup={key,timer:SHIELD_DUR,savedSpeed:null};
     G.shieldActive=true;
     showMsg('🛡 SCUDO ATTIVO!','#44aaff');
+    try{_zPlayShieldSound();}catch(e){}
     flashScreen('rgba(68,170,255,0.22)');
     sndShield();
     haptic([20,10,20,10,60]);
@@ -3612,7 +4134,23 @@ function registerHit(px,py,e){
     return; // nessun danno
   }
   G.lives--;G.shaking=24;G.invincible=180;updateLivesUI();
+  G._perfectMult=1;G.perfectDodgeCount=0; // reset moltiplicatore
+  // Esplosione drammatica al colpo
+  const _hp=CX+Math.cos(G.angle)*ORBIT_R,_hy=CY+Math.sin(G.angle)*ORBIT_R;
+  for(let _i=0;_i<30;_i++){
+    const _a=Math.random()*Math.PI*2,_sp=Math.random()*8+2;
+    G.particles.push({x:_hp,y:_hy,vx:Math.cos(_a)*_sp,vy:Math.sin(_a)*_sp,
+      life:40+Math.random()*20,color:['#ff2244','#ff8844','#ffffff'][_i%3],r:Math.random()*3+1});
+  }
+  G.shockwaves.push({r:0,alpha:.8,grow:25,color:'#ff2244'});
+  G.shockwaves.push({r:10,alpha:.5,grow:20,color:'#ff8844'});
   setTimeout(()=>{if(G&&G.running&&!G.enemies.some(e=>e.type.key==='shield'))spawnPowerup(ENEMY_TYPES[7]);},1500);
+  if(G.lives===1){
+    showMsg('💀 ULTIMA VITA — STAI PER DIVENTARE LEGGENDA','#ff2244');
+    flashScreen('rgba(255,34,68,0.25)');
+    G._lastLifeMode=true;
+    document.getElementById('c').style.filter='drop-shadow(0 0 8px rgba(255,34,68,.4))';
+  }
   for(let i=0;i<32;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*5+1.5;G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:55+Math.random()*20,color:i<16?'#ff2244':'#ff6633',r:Math.random()*4+1.5});}
   for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*3+.5;G.particles.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:35,color:'#ff8866',r:Math.random()*3+1});}
   G.rings.push({x:px,y:py,r:0,alpha:.85,color:'#ff2244',grow:10});
@@ -3639,7 +4177,24 @@ function registerHit(px,py,e){
         drawParticles();drawCenter();ctx.restore();
         if(G.deathFrame>75){ctx.fillStyle=`rgba(3,3,10,${((G.deathFrame-75)/45)*.92})`;ctx.fillRect(0,0,W,H);}
         requestAnimationFrame(deathAnim);
-      } else {stopGameMusic();endGame();}
+      } else {
+        // MORTE DRAMMATICA: freeze 600ms + silenzio
+        stopGameMusic();stopZivveOST();
+        G.running=false; // blocca il loop
+        // Esplosione finale massiccia
+        const _dpx=CX+Math.cos(G.angle)*ORBIT_R,_dpy=CY+Math.sin(G.angle)*ORBIT_R;
+        for(let _di=0;_di<60;_di++){
+          const _da=Math.random()*Math.PI*2,_ds=Math.random()*12+3;
+          G.particles.push({x:_dpx,y:_dpy,vx:Math.cos(_da)*_ds,vy:Math.sin(_da)*_ds,
+            life:60+Math.random()*40,color:['#ff2244','#ff8844','#ffffff','#ffee44'][_di%4],r:Math.random()*4+1.5});
+        }
+        for(let _si=0;_si<4;_si++) G.shockwaves.push({r:_si*15,alpha:.9-_si*.15,grow:28,color:'#ff2244'});
+        flashScreen('rgba(255,34,68,0.5)');
+        // Disegna un frame con l'esplosione
+        G.running=true;draw();G.running=false;
+        // Freeze 700ms poi game over
+        setTimeout(()=>{endGame();},700);
+      }
     })();
   }
 }
@@ -3657,6 +4212,7 @@ function levelBump(){
   updateLevelUI();sndLevelUp(isMajor);haptic(isMajor?[30,15,30,15,60]:[20,10,20,10,40]);
   // zigzag ai livelli major gestito nel loop principale
   G.nearMissStreak=0;
+  try{_zSetTension(G.level);if(G.level%5===0)_zPlaySignature(0.07);}catch(e){}
 }
 
 // ══════════════════════════════════════
@@ -3666,7 +4222,7 @@ function draw(){
   if(!G||!G.running)return;
   ctx.clearRect(0,0,W,H);
   if(G.shaking>0){const i=G.shaking*.4;ctx.save();ctx.translate((Math.random()-.5)*i,(Math.random()-.5)*i);}
-  drawBg();drawShockwaves();drawRings();drawTrail();drawEnemies();drawPlayer();drawParticles();drawCenter();drawPowerupHUD();drawOrbPowerHUD();drawBossHUD();
+  drawBg();drawShockwaves();drawRings();drawTrail();drawEnemies();drawAlly();drawPlayer();drawParticles();drawCenter();drawPowerupHUD();drawOrbPowerHUD();drawBossHUD();
   if(G.shaking>0)ctx.restore();
 }
 let _stars=null;
@@ -3733,6 +4289,27 @@ function drawTrail(){
   const r0=ORBIT_R*.072;
   for(let i=0;i<G.trails.length;i++){const t=G.trails[i],ratio=i/G.trails.length;ctx.save();ctx.globalAlpha=ratio*.32;ctx.fillStyle='#4af0d0';ctx.beginPath();ctx.arc(t.x,t.y,r0*ratio*.88,0,Math.PI*2);ctx.fill();ctx.restore();}
 }
+
+// Disegna sfera alleata
+function drawAlly(){
+  if(!G._ally||!G._ally.active) return;
+  const px=CX+Math.cos(G._ally.angle)*ORBIT_R;
+  const py=CY+Math.sin(G._ally.angle)*ORBIT_R;
+  const r=ORBIT_R*.065;
+  const alpha=Math.min(1,G._ally.life/60)*(1-Math.max(0,G._ally.life-29*60)/60);
+  ctx.save();
+  ctx.globalAlpha=alpha*.7;
+  // Alone cyan
+  const ag=ctx.createRadialGradient(px,py,0,px,py,r*3);
+  ag.addColorStop(0,'rgba(74,240,208,.4)');ag.addColorStop(1,'rgba(74,240,208,0)');
+  ctx.fillStyle=ag;ctx.beginPath();ctx.arc(px,py,r*3,0,Math.PI*2);ctx.fill();
+  // Sfera
+  const sg=ctx.createRadialGradient(px-r*.3,py-r*.3,0,px,py,r);
+  sg.addColorStop(0,'#ffffff');sg.addColorStop(.4,'#4af0d0');sg.addColorStop(1,'#006655');
+  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
 function drawPlayer(){
   const x=CX+Math.cos(G.angle)*ORBIT_R,y=CY+Math.sin(G.angle)*ORBIT_R,r=ORBIT_R*.072;
   if(G.invincible>0&&Math.floor(G.invincible/5)%2===0){ctx.save();ctx.globalAlpha=.28;}
@@ -3741,8 +4318,36 @@ function drawPlayer(){
   const aura=ctx.createRadialGradient(x,y,0,x,y,r*4.5);aura.addColorStop(0,'rgba(74,240,208,.25)');aura.addColorStop(1,'rgba(74,240,208,0)');ctx.save();ctx.fillStyle=aura;ctx.beginPath();ctx.arc(x,y,r*4.5,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='rgba(74,240,208,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r*1.65,0,Math.PI*2);ctx.stroke();
   ctx.restore();
+  // Progressione visiva basata su livello account
+  const _acLv2=typeof getAccountLevel==='function'?getAccountLevel().lv:1;
+  const _acColor=typeof getAccountLevel==='function'?(getAccountLevel().color||'#4af0d0'):'#4af0d0';
+  const _t2=Date.now()/1000;
+  // LV3+: alone pulsante colorato
+  if(_acLv2>=3){
+    const _glowR=r*(2.8+Math.sin(_t2*2.5)*.3);
+    const _gg=ctx.createRadialGradient(x,y,r*.5,x,y,_glowR);
+    _gg.addColorStop(0,_acColor+'44');_gg.addColorStop(1,_acColor+'00');
+    ctx.save();ctx.fillStyle=_gg;ctx.beginPath();ctx.arc(x,y,_glowR,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
   // Draw selected orb
   orb.draw(ctx,x,y,r);
+  // LV5+: anello orbitante
+  if(_acLv2>=5){
+    ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle=_acColor;ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(x,y,r*1.9,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  // LV8+: doppio anello ruotante
+  if(_acLv2>=8){
+    ctx.save();ctx.globalAlpha=.2;ctx.strokeStyle=_acColor;ctx.lineWidth=1;
+    ctx.translate(x,y);ctx.rotate(_t2*.8);
+    ctx.beginPath();ctx.arc(0,0,r*2.4,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  // LV10 ZIVVE GOD: particelle costanti
+  if(_acLv2>=10&&G.frameCount%4===0){
+    const _ca=Math.random()*Math.PI*2;
+    G.particles.push({x:x+Math.cos(_ca)*r*1.8,y:y+Math.sin(_ca)*r*1.8,
+      vx:Math.cos(_ca)*.6,vy:Math.sin(_ca)*.6,life:18,color:_acColor,r:.8});
+  }
   if(G.invincible>0&&Math.floor(G.invincible/5)%2===0)ctx.restore();
 
   // Scudo visivo — anello azzurro pulsante attorno alla sfera
@@ -3960,6 +4565,1268 @@ function drawIdle(){
 // ══════════════════════════════════════
 //  END GAME
 // ══════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════════════
+//  SISTEMA XP — 70 livelli + Paragon infinito
+// ══════════════════════════════════════════════════════════════
+
+const COSMIC_STATUSES = [
+  {minLv:1,   maxLv:6,   name:'Cenere',       color:'#666666', icon:'◈'},
+  {minLv:7,   maxLv:13,  name:'Nebbia',        color:'#999999', icon:'◈'},
+  {minLv:14,  maxLv:20,  name:'Ghiaccio',      color:'#c8d8e8', icon:'◈'},
+  {minLv:21,  maxLv:27,  name:'Vento Solare',  color:'#7ec8ff', icon:'◈'},
+  {minLv:28,  maxLv:34,  name:'Vuoto',         color:'#9955cc', icon:'◈'},
+  {minLv:35,  maxLv:41,  name:'Pulsar',        color:'#4af0d0', icon:'◈'},
+  {minLv:42,  maxLv:48,  name:'Nova',          color:'#00e066', icon:'◈'},
+  {minLv:49,  maxLv:55,  name:'Plasma',        color:'#ffe566', icon:'◈'},
+  {minLv:56,  maxLv:62,  name:'Sole',          color:'#ffaa00', icon:'◈'},
+  {minLv:63,  maxLv:69,  name:'Magnetar',      color:'#ff4455', icon:'◈'},
+  {minLv:70,  maxLv:76,  name:'Supernova',     color:'#ff6600', icon:'◈'},
+  {minLv:77,  maxLv:83,  name:'Quasar',        color:'#cc44ff', icon:'◈'},
+  {minLv:84,  maxLv:90,  name:'Singolarità',   color:'#ffd700', icon:'◈'},
+  {minLv:91,  maxLv:99,  name:'Etere',         color:'#fff0aa', icon:'◈'},
+  {minLv:100, maxLv:100, name:'Pietra Lunare', color:'aurora',  icon:'✦'},
+];
+
+const MAX_NORMAL_LEVEL = 100;
+const PARAGON_XP_BASE  = 5000; // P1=5000, P2=10000, P3=15000 (+5000 fisso)
+
+// Genera tabella XP livelli 1-70
+const XP_LEVELS = (function(){
+  const t=[0];
+  for(let n=1;n<=MAX_NORMAL_LEVEL;n++){
+    t.push(t[n-1]+Math.floor(80*Math.pow(n,1.6)));
+  }
+  return t;
+})();
+
+function getParagonXPNeeded(paragonLv){
+  return paragonLv * PARAGON_XP_BASE; // P1=5000, P2=10000, P3=15000...
+}
+
+function getAccountXP(){ return parseInt(localStorage.getItem('zivve_xp')||'0'); }
+function setAccountXP(v){ localStorage.setItem('zivve_xp',Math.max(0,Math.floor(v))); }
+
+function getAccountLevel(){
+  const xp=getAccountXP();
+  // Livelli normali 1-70
+  for(let lv=MAX_NORMAL_LEVEL;lv>=1;lv--){
+    if(xp>=XP_LEVELS[lv]) return _buildLevel(lv, xp);
+  }
+  return _buildLevel(1, xp);
+}
+
+function _buildLevel(lv, xp){
+  const isMax=(lv>=MAX_NORMAL_LEVEL);
+  // Status cosmico
+  const status=COSMIC_STATUSES.find(s=>lv>=s.minLv&&lv<=s.maxLv)||COSMIC_STATUSES[COSMIC_STATUSES.length-1];
+  const color=status.color==='aurora'?'#c8f0ff':status.color;
+
+  if(isMax){
+    // Calcola livello Paragon
+    const xpAfterMax=xp-XP_LEVELS[MAX_NORMAL_LEVEL];
+    let paragonLv=0, xpAccum=0;
+    while(xpAccum+getParagonXPNeeded(paragonLv+1)<=xpAfterMax){
+      xpAccum+=getParagonXPNeeded(paragonLv+1);
+      paragonLv++;
+    }
+    const paragonXPNeeded=getParagonXPNeeded(paragonLv+1);
+    const paragonXPCurrent=xpAfterMax-xpAccum;
+    return {
+      lv:MAX_NORMAL_LEVEL, paragon:paragonLv,
+      xp:paragonXPCurrent, xpNeeded:paragonXPNeeded,
+      pct:Math.min(100,Math.round(paragonXPCurrent/paragonXPNeeded*100)),
+      status, color, isMax:true
+    };
+  }
+
+  const xpCurrent=xp-XP_LEVELS[lv];
+  const xpNeeded=XP_LEVELS[lv+1]-XP_LEVELS[lv];
+  return {
+    lv, paragon:0,
+    xp:xpCurrent, xpNeeded,
+    pct:Math.min(100,Math.round(xpCurrent/xpNeeded*100)),
+    status, color, isMax:false
+  };
+}
+
+// Bonus Paragon sul potere della sfera
+function getParagonPowerBonus(){
+  const acc=getAccountLevel();
+  if(!acc.paragon||acc.paragon===0) return 1;
+  // Ogni livello Paragon: +2% al potere della sfera (cap a +100% al P50)
+  return Math.min(2.0, 1+(acc.paragon*0.02));
+}
+
+// Bonus Paragon allo score
+function getParagonScoreBonus(){
+  const acc=getAccountLevel();
+  if(!acc.paragon||acc.paragon===0) return 1;
+  return Math.min(1.5, 1+(acc.paragon*0.01));
+}
+
+// Aggiungi XP al giocatore
+function addXP(amount){
+  const prev=getAccountLevel();
+  const bonus=getBPXPMultiplier?getBPXPMultiplier():1;
+  setAccountXP(getAccountXP()+Math.floor(amount*bonus));
+  const next=getAccountLevel();
+  // Level up?
+  if(!prev.isMax&&next.lv>prev.lv){
+    showAccountLevelUp(next);
+  } else if(prev.paragon!==undefined&&next.paragon>prev.paragon){
+    showParagonLevelUp(next);
+  }
+  updateXPBar();
+}
+
+// Aggiorna la XP bar nel menu
+function updateXPBar(){
+  const acc=getAccountLevel();
+  const bar=document.getElementById('xpBar');
+  const lbl=document.getElementById('xpLabel');
+  const badge=document.getElementById('accountLvBadge');
+  const parBadge=document.getElementById('paragonBadge');
+  if(!bar||!lbl||!badge) return;
+
+  const isAurora=acc.status.color==='aurora';
+  bar.style.width=acc.pct+'%';
+  bar.style.background=isAurora?
+    'linear-gradient(90deg,#4af0d0,#7ec8ff,#cc88ff,#ffaacc,#4af0d0)':
+    acc.color;
+  badge.textContent=(acc.isMax?'LV.100':'LV.'+acc.lv);
+  badge.style.color=acc.color;
+
+  if(acc.isMax&&acc.paragon>0){
+    badge.textContent='✦ LV.100';
+    lbl.textContent='P'+acc.paragon+' — '+acc.xp+'/'+acc.xpNeeded+' XP';
+    if(parBadge){parBadge.textContent='(P'+acc.paragon+')';parBadge.style.display='inline';}
+  } else {
+    lbl.textContent=acc.xp+'/'+acc.xpNeeded+' XP';
+    if(parBadge) parBadge.style.display='none';
+  }
+
+  // Mostra status cosmico
+  const statusEl=document.getElementById('cosmicStatus');
+  if(statusEl){
+    statusEl.textContent=acc.status.icon+' '+acc.status.name;
+    statusEl.style.color=isAurora?'#c8f0ff':acc.color;
+  }
+}
+
+// Level up animation — livello normale
+function showAccountLevelUp(acc){
+  const isAurora=acc.status.color==='aurora';
+  const color=isAurora?'#c8f0ff':acc.color;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;text-align:center;pointer-events:none;font-family:Orbitron,sans-serif;animation:fadeInUp .5s ease';
+  div.innerHTML=
+    '<div style="font-size:11px;letter-spacing:.3em;color:'+color+';margin-bottom:6px">LEVEL UP</div>'+
+    '<div style="font-size:36px;font-weight:900;color:'+color+';text-shadow:0 0 30px '+color+';margin-bottom:4px">LV.'+acc.lv+'</div>'+
+    '<div style="font-size:13px;color:'+color+';letter-spacing:.15em">'+acc.status.icon+' '+acc.status.name+'</div>';
+  document.body.appendChild(div);
+  flashScreen('rgba('+hexToRgb(color)+',.2)');
+  haptic([30,20,80,20,150]);
+  setTimeout(()=>div.remove(),2800);
+}
+
+// Paragon level up
+function showParagonLevelUp(acc){
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;text-align:center;pointer-events:none;font-family:Orbitron,sans-serif';
+  div.innerHTML=
+    '<div style="font-size:10px;letter-spacing:.3em;color:#ffd700;margin-bottom:6px">PARAGON</div>'+
+    '<div style="font-size:44px;font-weight:900;color:#ffd700;text-shadow:0 0 40px #ffd700;margin-bottom:4px">(P'+acc.paragon+')</div>'+
+    '<div style="font-size:11px;color:rgba(255,215,0,.7);letter-spacing:.1em">Potere sfera +'+Math.round((getParagonPowerBonus()-1)*100)+'%</div>';
+  document.body.appendChild(div);
+  flashScreen('rgba(255,215,0,.25)');
+  haptic([50,20,100,20,200,20,200]);
+  setTimeout(()=>div.remove(),3000);
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
+}
+
+// XP per partita
+function calcXPForGame(score,level,time,nearMisses,perfectDodges){
+  let xp=Math.floor(score/10);
+  xp+=level*8;
+  xp+=Math.floor(time/10);
+  xp+=nearMisses*3;
+  xp+=perfectDodges*15;
+  return Math.max(10,xp);
+}
+
+function showAccountLevelUp(lv){
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;background:rgba(3,3,10,.97);border:2px solid '+lv.color+';border-radius:12px;padding:28px 40px;text-align:center;font-family:Orbitron,sans-serif;box-shadow:0 0 40px '+lv.color+'88';
+  d.innerHTML='<div style="font-size:11px;letter-spacing:.3em;color:'+lv.color+';margin-bottom:8px">LEVEL UP!</div><div style="font-size:28px;font-weight:900;color:#fff;margin-bottom:4px">LV.'+lv.lv+'</div><div style="font-size:18px;color:'+lv.color+';font-weight:700;letter-spacing:.1em">'+lv.name.toUpperCase()+'</div>';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),3500);
+}
+
+async function syncAccountToFirebase(){
+  if(!playerName||playerName==='ZIVVER') return;
+  try{
+    await fbSet('/players/'+encodeURIComponent(playerName),{
+      xp:getAccountXP(),level:getAccountLevel().lv,
+      name:playerName,ts:Date.now()
+    });
+  }catch(e){}
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  STAGIONI COMPETITIVE
+// ══════════════════════════════════════════════════════════════
+function getSeasonKey(){
+  const d=new Date();
+  return d.getFullYear()+'-S'+(Math.floor(d.getMonth()/1)+1).toString().padStart(2,'0');
+}
+function getSeasonDaysLeft(){
+  const now=new Date();
+  const end=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59);
+  return Math.ceil((end-now)/864e5);
+}
+async function postSeasonScore(name,score){
+  if(!USE_LB||!name||name==='ZIVVER') return;
+  const season=getSeasonKey();
+  try{
+    const ex=await fbGet('/seasons/'+season+'/'+encodeURIComponent(name));
+    if(ex&&ex.score>=score) return;
+    await fbSet('/seasons/'+season+'/'+encodeURIComponent(name),{
+      name,score,orb:selectedOrbId||'cyan',ts:Date.now()
+    });
+  }catch(e){}
+}
+async function getSeasonLB(limit=20){
+  const season=getSeasonKey();
+  try{
+    const data=await fbGet('/seasons/'+season);
+    if(data){
+      return Object.values(data).filter(r=>r&&r.name&&r.score)
+        .sort((a,b)=>b.score-a.score).slice(0,limit);
+    }
+  }catch(e){}
+  return [];
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SFIDA TRA AMICI
+// ══════════════════════════════════════════════════════════════
+function generateChallengeLink(score){
+  const code=btoa(JSON.stringify({
+    challenger:playerName||'ZIVVER',
+    score:score,
+    orb:selectedOrbId||'cyan',
+    ts:Date.now(),
+    expires:Date.now()+24*3600*1000 // 24 ore
+  })).replace(/=/g,'').slice(0,16);
+  return window.location.origin+window.location.pathname+'?challenge='+code+'_'+score;
+}
+function checkIncomingChallenge(){
+  const params=new URLSearchParams(window.location.search);
+  const ch=params.get('challenge');
+  if(!ch) return;
+  const parts=ch.split('_');
+  const score=parseInt(parts[parts.length-1])||0;
+  if(score>0){
+    localStorage.setItem('zivve_challenge_score',score);
+    localStorage.setItem('zivve_challenge_active','1');
+    // Mostra banner sfida
+    setTimeout(()=>showChallengeBanner(score),1000);
+  }
+}
+function showChallengeBanner(targetScore){
+  const d=document.createElement('div');
+  d.id='challengeBanner';
+  d.style.cssText='position:fixed;top:0;left:0;right:0;padding:10px 16px;background:linear-gradient(90deg,#cc00cc,#4400aa);z-index:100;display:flex;align-items:center;justify-content:space-between;font-family:Orbitron,sans-serif;font-size:11px;color:#fff;letter-spacing:.05em';
+  d.innerHTML='<span>\u26A4 SEI STATO SFIDATO! Batti: <b>'+targetScore+'pt</b></span>';
+  const btn=document.createElement('button');
+  btn.textContent='ACCETTA';
+  btn.style.cssText='background:#fff;color:#000;border:none;border-radius:4px;padding:4px 10px;font-weight:700;cursor:pointer;font-size:11px;margin-left:8px';
+  btn.onclick=()=>{d.remove();startGame();};
+  d.appendChild(btn);
+  document.body.insertBefore(d,document.body.firstChild);
+}
+function getChallengeTarget(){
+  if(localStorage.getItem('zivve_challenge_active')!=='1') return 0;
+  return parseInt(localStorage.getItem('zivve_challenge_score')||'0');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  BATTLE PASS MENSILE
+// ══════════════════════════════════════════════════════════════
+const BATTLE_PASS_PRICE='https://buy.stripe.com/eVq7sL6q6aXB4KGcMk7kc00'; // €0.99 placeholder
+function getBPMonth(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
+function hasBattlePass(){ return localStorage.getItem('zivve_bp_'+getBPMonth())==='1'; }
+function activateBattlePass(){ localStorage.setItem('zivve_bp_'+getBPMonth(),'1'); showMsg('⭐ BATTLE PASS ATTIVO!','#ffd700'); }
+function getBPXPMultiplier(){ return hasBattlePass()?1.5:1; }
+// Battle pass rewards per level
+const BP_REWARDS={
+  3:{desc:'Sfera esclusiva del mese',orbId:'bp_monthly'},
+  5:{desc:'XP x1.5 per tutto il mese'},
+  7:{desc:'Badge Battle Pass'},
+  10:{desc:'Cornice nome in classifica'},
+};
+
+
+// ══════════════════════════════════════════════════════════════
+//  LAST ZIVVER STANDING
+// ══════════════════════════════════════════════════════════════
+function getLVSTimeToday(){
+  const now=new Date();
+  const target=new Date(now);
+  target.setHours(21,0,0,0);
+  if(now>=target) target.setDate(target.getDate()+1);
+  return target;
+}
+function getLVSSecsToStart(){
+  return Math.max(0,Math.floor((getLVSTimeToday()-new Date())/1000));
+}
+function getLVSDailyKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+}
+function hasPlayedLVSToday(){
+  return localStorage.getItem('zivve_lvs_'+getLVSDailyKey())==='1';
+}
+function startLVS(){
+  if(!isTester()&&hasPlayedLVSToday()){showMsg('Hai già giocato oggi — torna alle 21:00!','#cc00cc');return;}
+  localStorage.setItem('zivve_lvs_'+getLVSDailyKey(),'1');
+  // Seed giornaliero uguale per tutti
+  const seed=parseInt(getLVSDailyKey().replace(/-/g,''));
+  showMsg('👑 LAST ZIVVER STANDING!','#ffd700');
+  startGame(seed);
+}
+async function postLVSScore(score){
+  if(!USE_LB||!playerName||playerName==='ZIVVER') return;
+  const key=getLVSDailyKey();
+  try{
+    const ex=await fbGet('/lvs/'+key+'/'+encodeURIComponent(playerName));
+    if(ex&&ex.score>=score) return;
+    await fbSet('/lvs/'+key+'/'+encodeURIComponent(playerName),{
+      name:playerName,score,orb:selectedOrbId||'cyan',ts:Date.now()
+    });
+  }catch(e){}
+}
+async function getLVSLB(){
+  const key=getLVSDailyKey();
+  try{
+    const data=await fbGet('/lvs/'+key);
+    if(data) return Object.values(data).filter(r=>r&&r.name&&r.score).sort((a,b)=>b.score-a.score).slice(0,20);
+  }catch(e){}
+  return [];
+}
+function updateLVSCountdown(){
+  const el=document.getElementById('lvsCountdown');
+  if(!el) return;
+  const secs=getLVSSecsToStart();
+  const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),s=secs%60;
+  if(secs<=0){
+    el.textContent='🔴 LIVE ORA';
+    el.style.color='#ff2244';
+  } else {
+    el.textContent=h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
+  }
+}
+// Avvia countdown LVS
+setInterval(updateLVSCountdown,1000);
+
+
+// ══════════════════════════════════════════════════════════════
+//  RIVAL SYSTEM
+// ══════════════════════════════════════════════════════════════
+let _rivalName='', _rivalScore=0;
+async function updateRival(){
+  if(!playerName||playerName==='ZIVVER') return;
+  try{
+    const rows=await lbGet(50);
+    if(!rows||!rows.length) return;
+    const myScore=bestScore;
+    // Trova il giocatore con score appena sopra il tuo
+    const above=rows.filter(r=>r.name!==playerName&&r.score>myScore).sort((a,b)=>a.score-b.score);
+    if(above.length){
+      _rivalName=above[0].name;
+      _rivalScore=above[0].score;
+    } else {
+      // Sei primo — mostra il secondo
+      const others=rows.filter(r=>r.name!==playerName);
+      if(others.length){_rivalName=others[0].name;_rivalScore=others[0].score;}
+    }
+    updateRivalDisplay();
+  }catch(e){}
+}
+function updateRivalDisplay(){
+  const el=document.getElementById('rivalDisplay');
+  if(!el||!_rivalName) return;
+  const gap=_rivalScore-bestScore;
+  if(gap>0) el.innerHTML='⚔️ <b>'+_rivalName+'</b> ti supera di <b style="color:#ff4488">'+gap+' pt</b>';
+  else el.innerHTML='🏆 Sei davanti a <b>'+_rivalName+'</b> di <b style="color:#4af0d0">'+Math.abs(gap)+' pt</b>';
+  el.style.display='block';
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  BOUNCE BACK REWARD
+// ══════════════════════════════════════════════════════════════
+function checkBounceBack(score){
+  if(score<bestScore*0.7){ // partita andata male (<70% del record)
+    localStorage.setItem('zivve_bounce_back','1');
+    localStorage.setItem('zivve_bounce_ts',Date.now());
+  }
+}
+function hasBounceBack(){
+  if(localStorage.getItem('zivve_bounce_back')!=='1') return false;
+  const ts=parseInt(localStorage.getItem('zivve_bounce_ts')||'0');
+  return Date.now()-ts<300000; // valido 5 minuti
+}
+function consumeBounceBack(){
+  localStorage.removeItem('zivve_bounce_back');
+  localStorage.removeItem('zivve_bounce_ts');
+}
+function getBounceXPMult(){ return hasBounceBack()?2:1; }
+
+
+// Live players simulation (aggiorna ogni 30s)
+function updateLiveCounter(){
+  const el=document.getElementById('liveCounter');
+  if(!el) return;
+  // Simulazione realistica basata su ora del giorno
+  const h=new Date().getHours();
+  const base=h>=20&&h<=23?42:h>=17&&h<=19?28:h>=12&&h<=14?18:8;
+  const n=base+Math.floor(Math.random()*8)-3;
+  el.textContent='🟢 '+Math.max(1,n)+' giocatori online';
+}
+setInterval(updateLiveCounter,30000);
+setInterval(()=>{checkIncomingPenalty();checkIncomingReward();},15000);
+updateLiveCounter();
+
+
+// ══════════════════════════════════════════════════════════════
+//  INTRO CINEMATICA
+// ══════════════════════════════════════════════════════════════
+let _introPlayed=false;
+function runIntro(){
+  // Tester: vede sempre l'intro. Altri: solo la prima volta
+  const _seenBefore=localStorage.getItem('zivve_intro_seen')==='1';
+  if(_introPlayed||(_seenBefore&&!isTester())){
+    hideIntro();return;
+  }
+  _introPlayed=true;
+  // Particelle intro
+  const ic=document.getElementById('introCanvas');
+  if(!ic) return;
+  ic.width=window.innerWidth;ic.height=window.innerHeight;
+  const ix=ic.getContext('2d');
+  const stars=Array.from({length:80},()=>({
+    x:Math.random()*ic.width,y:Math.random()*ic.height,
+    r:Math.random()*1.5+.3,v:Math.random()*.3+.1,
+    a:Math.random()
+  }));
+  let _iFrame;
+  function _iDraw(){
+    ix.fillStyle='rgba(0,0,0,.04)';ix.fillRect(0,0,ic.width,ic.height);
+    stars.forEach(s=>{
+      s.a=Math.min(1,s.a+.005);
+      ix.globalAlpha=s.a*.7;ix.fillStyle='#4af0d0';
+      ix.beginPath();ix.arc(s.x,s.y,s.r,0,Math.PI*2);ix.fill();
+      s.y+=s.v;if(s.y>ic.height){s.y=0;s.x=Math.random()*ic.width;}
+    });
+    ix.globalAlpha=1;
+    _iFrame=requestAnimationFrame(_iDraw);
+  }
+  _iDraw();
+  // Firma ZIVVE nell'intro
+  try{_zPlaySignature(0.12);}catch(e){}
+  // Animazione testi
+    setTimeout(()=>{
+    const l1=document.getElementById('introLine1');
+    if(l1) l1.style.color='rgba(74,240,208,.8)';
+  },800);
+  setTimeout(()=>{try{_zPlaySignature(0.14);}catch(e){}},1200);
+  setTimeout(()=>{
+    const lg=document.getElementById('introLogo');
+    if(lg){lg.style.color='rgba(255,255,255,1)';lg.style.textShadow='0 0 80px rgba(74,240,208,.8)';}
+  },2500);
+  setTimeout(()=>{
+    const l2=document.getElementById('introLine2');
+    if(l2) l2.style.color='rgba(74,240,208,.9)';
+  },4500);
+  setTimeout(()=>{
+    const l3=document.getElementById('introLine3');
+    if(l3) l3.style.color='rgba(255,255,255,.7)';
+  },6500);
+  // Auto-skip dopo 10s
+  setTimeout(()=>{
+    cancelAnimationFrame(_iFrame);
+    hideIntro();
+  },10000);
+}
+function hideIntro(){
+  const el=document.getElementById('introOverlay');
+  if(!el) return;
+  el.style.opacity='0';
+  setTimeout(()=>{
+    el.style.display='none';
+    // Mostra menu principale dopo l'intro
+    show('startOverlay');
+    if(!localStorage.getItem('drift_name_set')){
+      setTimeout(()=>show('nameOverlay'),300);
+    }
+    try{startZivveMenuTheme();}catch(e){}
+    updateXPBar();
+  },1000);
+  localStorage.setItem('zivve_intro_seen','1');
+}
+function skipIntro(){
+  hideIntro();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  REFERRAL SYSTEM
+// ══════════════════════════════════════════════════════════════
+function generateReferralLink(){
+  const code=(playerName||'ZIVVER').slice(0,8).toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return window.location.origin+window.location.pathname+'?ref='+code;
+}
+function checkReferral(){
+  const params=new URLSearchParams(window.location.search);
+  const ref=params.get('ref');
+  if(!ref) return;
+  localStorage.setItem('zivve_referred_by',ref);
+  // Dopo la prima partita, sblocca sfera bonus
+  localStorage.setItem('zivve_ref_bonus_pending','1');
+}
+function applyReferralBonus(){
+  if(localStorage.getItem('zivve_ref_bonus_pending')!=='1') return;
+  localStorage.removeItem('zivve_ref_bonus_pending');
+  // Sblocca sfera fluo_green come bonus referral
+  if(!ownedOrbs.includes('fluo_green')){
+    ownedOrbs.push('fluo_green');
+    localStorage.setItem('drift_owned',JSON.stringify(ownedOrbs));
+    setTimeout(()=>showMsg('🎁 SFERA REGALO — Fluo Green sbloccata!','#00ffaa'),2000);
+  }
+}
+function showReferralScreen(){
+  const link=generateReferralLink();
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.96);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;text-align:center;font-family:Orbitron,sans-serif';
+  div.innerHTML='<div style="font-size:11px;letter-spacing:.3em;color:#4af0d0;margin-bottom:12px">🎁 PORTA UN AMICO</div><div style="font-size:14px;color:#fff;margin-bottom:8px;font-weight:700">Il tuo amico gioca → Tu ricevi una sfera esclusiva</div><div style="font-size:10px;color:rgba(200,220,255,.6);margin-bottom:20px">Il tuo link personale:</div><div style="background:rgba(74,240,208,.08);border:1px solid rgba(74,240,208,.3);border-radius:6px;padding:10px 16px;font-size:10px;color:#4af0d0;word-break:break-all;margin-bottom:20px;max-width:320px">'+link+'</div>';
+  const btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:12px;flex-wrap:wrap;justify-content:center';
+  const copyBtn=document.createElement('button');
+  copyBtn.textContent='📋 COPIA';
+  copyBtn.style.cssText='background:rgba(74,240,208,.15);border:1px solid rgba(74,240,208,.4);color:#4af0d0;padding:10px 20px;border-radius:6px;font-family:Orbitron,sans-serif;font-size:11px;cursor:pointer';
+  copyBtn.onclick=()=>{navigator.clipboard?navigator.clipboard.writeText(link).then(()=>{copyBtn.textContent='✅ COPIATO!';}):prompt('Link:',link);};
+  const shareBtn2=document.createElement('button');
+  shareBtn2.textContent='📤 CONDIVIDI';
+  shareBtn2.style.cssText='background:linear-gradient(135deg,#4af0d0,#0088cc);border:none;color:#000;padding:10px 20px;border-radius:6px;font-family:Orbitron,sans-serif;font-size:11px;font-weight:900;cursor:pointer';
+  shareBtn2.onclick=()=>{
+    const text='🎮 Gioco a ZIVVE — puoi battere il mio record? '+link;
+    if(navigator.share) navigator.share({title:'ZIVVE',text,url:link});
+    else navigator.clipboard.writeText(text);
+  };
+  const closeBtn2=document.createElement('button');
+  closeBtn2.textContent='×';
+  closeBtn2.style.cssText='position:absolute;top:16px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:24px;cursor:pointer';
+  closeBtn2.onclick=()=>div.remove();
+  btnRow.appendChild(copyBtn);btnRow.appendChild(shareBtn2);
+  div.appendChild(btnRow);div.appendChild(closeBtn2);
+  div.style.position='fixed';
+  document.body.appendChild(div);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  STARTER PACK
+// ══════════════════════════════════════════════════════════════
+const STARTER_PACK_PRICE='https://buy.stripe.com/eVq7sL6q6aXB4KGcMk7kc00'; // €2.99
+function hasStarterPack(){ return localStorage.getItem('zivve_starter_pack')==='1'; }
+function showStarterPackScreen(){
+  if(hasStarterPack()) return;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;text-align:center;font-family:Orbitron,sans-serif';
+  const content=[
+    '<div style="font-size:10px;letter-spacing:.4em;color:#ffd700;margin-bottom:8px">⚡ OFFERTA LIMITATA</div>',
+    '<div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">STARTER PACK</div>',
+    '<div style="font-size:28px;font-weight:900;color:#ffd700;margin-bottom:4px">€2.99</div>',
+    '<div style="font-size:10px;color:rgba(200,220,255,.5);text-decoration:line-through;margin-bottom:16px">valore €9.97</div>',
+    '<div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:16px;margin-bottom:20px;max-width:280px">',
+    '<div style="color:#4af0d0;font-size:11px;margin-bottom:6px">✅ 5 sfere premium</div>',
+    '<div style="color:#4af0d0;font-size:11px;margin-bottom:6px">✅ Battle Pass del primo mese</div>',
+    '<div style="color:#4af0d0;font-size:11px;margin-bottom:6px">✅ XP x2 per 7 giorni</div>',
+    '<div style="color:#4af0d0;font-size:11px">✅ Badge Fondatore esclusivo</div>',
+    '</div>',
+  ].join('');
+  div.innerHTML=content;
+  const buyBtn=document.createElement('button');
+  buyBtn.textContent='🚀 ACQUISTA ORA';
+  buyBtn.style.cssText='background:linear-gradient(135deg,#ffd700,#ff8800);color:#000;border:none;border-radius:8px;padding:14px 32px;font-weight:900;font-size:14px;cursor:pointer;letter-spacing:.1em;font-family:Orbitron,sans-serif;margin-bottom:12px';
+  buyBtn.onclick=()=>window.open(STARTER_PACK_PRICE,'_blank');
+  const closeBtn3=document.createElement('button');
+  closeBtn3.textContent='Non ora';
+  closeBtn3.style.cssText='background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;font-family:Orbitron,sans-serif';
+  closeBtn3.onclick=()=>{div.remove();localStorage.setItem('zivve_sp_dismissed','1');};
+  div.appendChild(buyBtn);div.appendChild(closeBtn3);
+  document.body.appendChild(div);
+}
+// Mostra starter pack dopo la 2a partita
+function checkShowStarterPack(){
+  if(isTester()||hasStarterPack()||localStorage.getItem('zivve_sp_dismissed')==='1') return;
+  const gp=parseInt(localStorage.getItem('drift_games_played')||'0');
+  if(gp===2) setTimeout(showStarterPackScreen,3000);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  EVENTI SEGRETI — Il momento impossibile da dimenticare
+// ══════════════════════════════════════════════════════════════
+
+// Evento A: Sfera alleata al livello 15 (appare una volta per sessione)
+let _allySphereShown=false;
+function maybeSpawnAlly(){
+  if(_allySphereShown||G.level<15) return;
+  if(Math.random()>0.3) return; // 30% chance al lvl 15
+  _allySphereShown=true;
+  const allyDur=30*60; // 30s
+  let _allyLife=0;
+  const _allyAngle={v:G.angle||0};
+  G._ally={active:true,angle:_allyAngle.v,life:0};
+  showMsg('✨ Non sei solo...','#4af0d0');
+  const _allyInt=setInterval(()=>{
+    if(!G||!G.running||!G._ally||!G._ally.active){clearInterval(_allyInt);return;}
+    G._ally.life++;
+    // Ally orbita nella direzione opposta
+    G._ally.angle-=G.speed*.008;
+    if(G._ally.life>=allyDur){
+      G._ally.active=false;clearInterval(_allyInt);
+      showMsg('✨ ...','#4af0d0');
+    }
+  },1000/60);
+}
+
+// Evento B: Schermo capovolto al livello 25 (10 secondi)
+let _flipShown=false;
+function maybeFlipScreen(){
+  if(_flipShown||G.level!==25) return;
+  _flipShown=true;
+  const gameCanvas=document.getElementById('c');
+  gameCanvas.style.transition='transform 0.5s ease';
+  gameCanvas.style.transform='rotate(180deg)';
+  showMsg('⚠️ GRAVITÀ INVERTITA','#ff8844');
+  setTimeout(()=>{
+    gameCanvas.style.transform='rotate(0deg)';
+    showMsg('⚠️ RIPRISTINO...','#ff8844');
+  },10000);
+}
+
+// Evento C: Sfera nera misteriosa (1/50 partite, +3 vite se toccata)
+function maybeSpawnBlackOrb(){
+  const gp=parseInt(localStorage.getItem('drift_games_played')||'0');
+  if(gp%47!==0&&gp%53!==0) return; // appare circa 1/50 partite
+  if(!G.running||G.level<5) return;
+  const a=Math.random()*Math.PI*2,r=ORBIT_R*(1.1+Math.random()*.3);
+  G.enemies.push({
+    x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r,
+    vx:Math.cos(a+Math.PI)*.3,vy:Math.sin(a+Math.PI)*.3,
+    life:0,pulsePhase:0,driftX:0,driftY:0,
+    type:{key:'black_orb',rMult:.07,spdMult:.4,
+      color0:'#111',color1:'#000',color2:'#000',
+      haloCols:['rgba(255,255,255,.15)','rgba(200,200,255,.05)','rgba(0,0,0,0)'],
+      haloR:6,isPowerup:true,isBlackOrb:true},
+    totalLife:900,_isBlackOrb:true
+  });
+  // Nessun messaggio — chi la trova, la trova
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  TEMI CAMPO DI GIOCO
+// ══════════════════════════════════════════════════════════════
+const BG_THEMES=[
+  {id:'default', name:'Cosmo', unlockLv:1,  colors:['#03030a','#050815'],starColor:'rgba(255,255,255,'},
+  {id:'nebula',  name:'Nebulosa', unlockLv:3, colors:['#0a0320','#03050f'],starColor:'rgba(180,120,255,'},
+  {id:'deep',    name:'Abisso', unlockLv:5,  colors:['#000510','#001020'],starColor:'rgba(100,200,255,'},
+  {id:'fire',    name:'Inferno', unlockLv:7, colors:['#150300','#0a0000'],starColor:'rgba(255,150,50,'},
+  {id:'matrix',  name:'Matrix', unlockLv:9, colors:['#000500','#001000'],starColor:'rgba(0,255,100,'},
+];
+function getCurrentBgTheme(){
+  const id=localStorage.getItem('zivve_bg_theme')||'default';
+  return BG_THEMES.find(t=>t.id===id)||BG_THEMES[0];
+}
+function setBgTheme(id){ localStorage.setItem('zivve_bg_theme',id); }
+function getUnlockedBgThemes(){
+  const lv=typeof getAccountLevel==='function'?getAccountLevel().lv:1;
+  return BG_THEMES.filter(t=>t.unlockLv<=lv);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  AUDIO ADATTIVO
+// ══════════════════════════════════════════════════════════════
+function _zAdaptAudio(){
+  if(!audioCtx||!bgGain) return;
+  try{
+    // 1 vita rimasta: volume aumenta + accelerazione percepita
+    if(G.lives===1){
+      bgGain.gain.setTargetAtTime(.22,audioCtx.currentTime,.3);
+    } else {
+      bgGain.gain.setTargetAtTime(.14,audioCtx.currentTime,.5);
+    }
+    // Boss attivo: pitch shift simulato (più grave)
+    if(G.bossActive&&_zOST.active){
+      _zOST.bossMode=true;
+    }
+  }catch(e){}
+}
+// Suono power-up shield: nota D# acuta
+function _zPlayShieldSound(){
+  try{
+    const ac=getAudio();
+    [622,740,880].forEach((f,i)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='sine';o.frequency.value=f;
+      o.connect(g);g.connect(bgGain);
+      const t=ac.currentTime+i*.08;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.08,t+.04);
+      g.gain.exponentialRampToValueAtTime(.001,t+.3);
+      o.start(t);o.stop(t+.35);
+    });
+  }catch(e){}
+}
+// Suono record battuto: fanfara
+function _zPlayRecordSound(){
+  try{
+    const ac=getAudio();
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='triangle';o.frequency.value=f;
+      o.connect(g);g.connect(bgGain);
+      const t=ac.currentTime+i*.12;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.05);
+      g.gain.exponentialRampToValueAtTime(.001,t+.5);
+      o.start(t);o.stop(t+.6);
+    });
+  }catch(e){}
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  TORNEO TRA AMICI + THE KING SAY
+// ══════════════════════════════════════════════════════════════
+
+const KING_PENALTIES = [
+  {id:'freeze',    icon:'❄️',  name:'Congelato',    desc:'Nemici x2 velocità per 10s'},
+  {id:'invert',    icon:'🔄',  name:'Invertito',    desc:'Controlli invertiti per 10s'},
+  {id:'life',      icon:'💀',  name:'-1 Vita',      desc:'Perdi 1 vita a inizio partita'},
+  {id:'slowforce', icon:'🐌',  name:'Ultra Slow',   desc:'Slow forzato per 20s'},
+  {id:'blind',     icon:'👁️',  name:'Schermo Buio', desc:'Solo la tua sfera visibile per 5s'},
+  {id:'bighit',    icon:'🎯',  name:'Hitbox Doppia',desc:'Hitbox x2 per 20s — colpisci più facile'},
+  {id:'speed',     icon:'⚡',  name:'Turbo',        desc:'Tutto x3 velocità per 20s'},
+  {id:'zigforce',  icon:'🔀',  name:'ZAP Storm',    desc:'Campo pieno di zigzag per 10s'},
+  {id:'noshield',  icon:'🛡️',  name:'Scudo Rimosso',desc:'Scudo sparisce — solo una volta'},
+  {id:'target',    icon:'👑',  name:'Bersaglio',    desc:'Tutti i nemici ti inseguono direttamente'},
+];
+
+// ── Gestione torneo su Firebase ──
+function getTourneyWeekKey(){
+  const d=new Date();
+  return d.getFullYear()+'-W'+String(Math.ceil((d-new Date(d.getFullYear(),0,1))/6048e5)).padStart(2,'0')+'-T';
+}
+
+async function createTourney(){
+  const code=Math.random().toString(36).slice(2,8).toUpperCase();
+  const week=getTourneyWeekKey();
+  const data={
+    code, week, host:playerName,
+    members:{[playerName]:{name:playerName,score:0,orb:selectedOrbId,ts:Date.now()}},
+    created:Date.now(), kingPenalties:{}, usedPenalties:{}
+  };
+  await fbSet('/tourneys/'+code, data);
+  localStorage.setItem('zivve_tourney_code', code);
+  localStorage.setItem('zivve_tourney_week', week);
+  return code;
+}
+
+async function joinTourney(code){
+  code=code.toUpperCase().trim();
+  try{
+    const t=await fbGet('/tourneys/'+code);
+    if(!t){showMsg('Codice non trovato','#ff4488');return false;}
+    if(t.week!==getTourneyWeekKey()){showMsg('Torneo scaduto','#ff4488');return false;}
+    await fbSet('/tourneys/'+code+'/members/'+encodeURIComponent(playerName),
+      {name:playerName,score:0,orb:selectedOrbId,ts:Date.now()});
+    localStorage.setItem('zivve_tourney_code', code);
+    localStorage.setItem('zivve_tourney_week', t.week);
+    showMsg('✅ Entrato nel torneo '+code,'#4af0d0');
+    return true;
+  }catch(e){showMsg('Errore: '+e.message,'#ff4488');return false;}
+}
+
+async function updateTourneyScore(score){
+  const code=localStorage.getItem('zivve_tourney_code');
+  const week=localStorage.getItem('zivve_tourney_week');
+  if(!code||!playerName||week!==getTourneyWeekKey()) return;
+  try{
+    const ex=await fbGet('/tourneys/'+code+'/members/'+encodeURIComponent(playerName));
+    if(ex&&ex.score>=score) return;
+    await fbSet('/tourneys/'+code+'/members/'+encodeURIComponent(playerName),
+      {name:playerName,score,orb:selectedOrbId,ts:Date.now()});
+  }catch(e){}
+}
+
+async function getTourneyLeader(code){
+  try{
+    const t=await fbGet('/tourneys/'+code);
+    if(!t||!t.members) return null;
+    const rows=Object.values(t.members).sort((a,b)=>b.score-a.score);
+    return rows[0]||null;
+  }catch(e){return null;}
+}
+
+// ── THE KING SAY ──
+async function activateKingSay(code){
+  const leader=await getTourneyLeader(code);
+  if(!leader||leader.name!==playerName){
+    showMsg('Solo il RE può usare questo potere!','#ffd700');return;
+  }
+  showKingSayScreen(code);
+}
+
+async function showKingSayScreen(code){
+  try{
+    const t=await fbGet('/tourneys/'+code);
+    if(!t||!t.members) return;
+    const members=Object.values(t.members)
+      .sort((a,b)=>b.score-a.score)
+      .filter(m=>m.name!==playerName);
+    const usedPenalties=t.usedPenalties||{};
+
+    const div=document.createElement('div');
+    div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:300;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:20px;gap:10px;font-family:Orbitron,sans-serif';
+
+    let html='<div style="font-size:10px;letter-spacing:.4em;color:#ffd700;margin-bottom:4px">👑 THE KING SAY</div>';
+    html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:8px;text-align:center">Penalizza o premia — 1 volta per torneo</div>';
+    html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:10px">Scegli chi penalizzare:</div>';
+
+    members.forEach(function(m){
+      const alreadyPenalized=usedPenalties[m.name];
+      const borderCol=alreadyPenalized?'rgba(255,34,68,.3)':'rgba(255,215,0,.2)';
+      const opac=alreadyPenalized?'.4':'1';
+      const cursor=alreadyPenalized?'default':'pointer';
+            const onclick=alreadyPenalized?'':'selectKingTarget('+JSON.stringify(m.name)+','+JSON.stringify(code)+')';
+      const penNote=alreadyPenalized?'<div style="font-size:9px;color:#ff4488;margin-top:4px">⚠️ Già penalizzato</div>':'';
+      html+='<div style="background:rgba(255,255,255,.04);border:1px solid '+borderCol+';border-radius:8px;padding:12px 16px;width:100%;max-width:320px;cursor:'+cursor+';opacity:'+opac+'" onclick="'+onclick+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<span style="color:#fff;font-size:12px;font-weight:700">'+m.name+'</span>'+
+        '<span style="color:#4af0d0;font-size:11px">'+m.score+' pt</span></div>'+
+        penNote+'</div>';
+    });
+
+    // Stessi membri per i premi
+    html+='<div id="ksRewMembers">';
+    members.forEach(function(m){
+      const alreadyRewarded=(t.usedRewards||{})[m.name];
+      const borderCol2=alreadyRewarded?'rgba(74,240,208,.2)':'rgba(74,240,208,.3)';
+      const opac2=alreadyRewarded?'.4':'1';
+      const onclick2=alreadyRewarded?'':'selectKingRewardTarget('+JSON.stringify(m.name)+','+JSON.stringify(code)+')';
+      const rewNote=alreadyRewarded?'<div style="font-size:9px;color:#4af0d0;margin-top:4px">✅ Già premiato</div>':'';
+      html+='<div style="background:rgba(74,240,208,.04);border:1px solid '+borderCol2+';border-radius:8px;padding:12px 16px;width:100%;max-width:320px;cursor:'+(alreadyRewarded?'default':'pointer')+';opacity:'+opac2+'" onclick="'+onclick2+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<span style="color:#fff;font-size:12px;font-weight:700">'+m.name+'</span>'+
+        '<span style="color:#4af0d0;font-size:11px">'+m.score+' pt</span></div>'+
+        rewNote+'</div>';
+    });
+    html+='</div>';
+
+    div.innerHTML=html;
+
+    // Sposta i div nei tab corretti
+    const penTab=div.querySelector('#ksTabPen');
+    const rewTab=div.querySelector('#ksTabRew');
+    const penMembers=div.querySelectorAll('[id^="kstarget_"]');
+    const rewMembers=div.querySelector('#ksRewMembers');
+    if(penTab&&rewTab&&rewMembers){
+      rewTab.appendChild(rewMembers);
+    }
+    const closeBtn=document.createElement('button');
+    closeBtn.textContent='← ANNULLA';
+    closeBtn.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px;margin-top:8px';
+    closeBtn.onclick=()=>div.remove();
+    div.appendChild(closeBtn);
+    document.body.appendChild(div);
+  }catch(e){showMsg('Errore: '+e.message,'#ff4488');}
+}
+
+function selectKingRewardTarget(targetName, code){
+  const existing=document.querySelector('[id^="kstarget_"]');
+  if(existing) existing.closest('div[style*="fixed"]').remove();
+
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:301;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:20px;gap:8px;font-family:Orbitron,sans-serif';
+
+  let html='<div style="font-size:10px;letter-spacing:.4em;color:#4af0d0;margin-bottom:4px">🎁 PREMIA '+targetName+'</div>';
+  html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:16px">Scegli il premio:</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px">';
+  KING_REWARDS.forEach(function(p){
+    const oc2="applyKingReward('"+targetName+"','"+code+"','"+p.id+"',this.closest('div[style*=fixed]'))";
+    html+='<div onclick="'+oc2+'" style="background:rgba(74,240,208,.06);border:1px solid rgba(74,240,208,.2);border-radius:8px;padding:10px;cursor:pointer;text-align:center">'+
+      '<div style="font-size:22px">'+p.icon+'</div>'+
+      '<div style="font-size:10px;color:#fff;font-weight:700;margin:4px 0">'+p.name+'</div>'+
+      '<div style="font-size:9px;color:rgba(200,220,255,.5);line-height:1.3">'+p.desc+'</div></div>';
+  });
+  html+='</div>';
+  div.innerHTML=html;
+
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='← INDIETRO';
+  closeBtn.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px;margin-top:8px';
+  closeBtn.onclick=()=>{div.remove();showKingSayScreen(code);};
+  div.appendChild(closeBtn);
+  document.body.appendChild(div);
+}
+
+async function applyKingReward(targetName, code, rewardId, overlay){
+  const reward=KING_REWARDS.find(p=>p.id===rewardId);
+  if(!reward) return;
+  try{
+    await fbSet('/tourneys/'+code+'/kingRewards/'+encodeURIComponent(targetName),{
+      reward:rewardId, from:playerName, ts:Date.now(),
+      week:getTourneyWeekKey(), applied:false
+    });
+    await fbSet('/tourneys/'+code+'/usedRewards/'+encodeURIComponent(targetName), rewardId);
+    if(overlay) overlay.remove();
+    showMsg('🎁 '+reward.icon+' '+reward.name+' inviato a '+targetName+'!','#4af0d0');
+    flashScreen('rgba(74,240,208,.2)');
+    haptic([30,10,60,10,100]);
+  }catch(e){showMsg('Errore: '+e.message,'#ff4488');}
+}
+
+function selectKingTarget(targetName, code){
+  // Mostra le 10 penalità
+  const existing=document.querySelector('[id^="kstarget_"]');
+  if(existing) existing.closest('div[style*="fixed"]').remove();
+
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:301;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:20px;gap:8px;font-family:Orbitron,sans-serif';
+
+  let html=`<div style="font-size:10px;letter-spacing:.4em;color:#ffd700;margin-bottom:4px">👑 PENALIZZA ${targetName}</div>`;
+  html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:16px">Scegli la penalità:</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px">';
+
+  KING_PENALTIES.forEach(function(p){
+    const oc="applyKingPenalty('"+targetName+"','"+code+"','"+p.id+"',this.closest('div[style*=fixed]'))";
+    html+='<div onclick="'+oc+'" style="background:rgba(255,34,68,.06);border:1px solid rgba(255,34,68,.2);border-radius:8px;padding:10px;cursor:pointer;text-align:center">'+
+      '<div style="font-size:22px">'+p.icon+'</div>'+
+      '<div style="font-size:10px;color:#fff;font-weight:700;margin:4px 0">'+p.name+'</div>'+
+      '<div style="font-size:9px;color:rgba(200,220,255,.5);line-height:1.3">'+p.desc+'</div></div>';
+  });
+  html+='</div>';
+
+  div.innerHTML=html;
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='← INDIETRO';
+  closeBtn.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px;margin-top:8px';
+  closeBtn.onclick=()=>{div.remove();showKingSayScreen(code);};
+  div.appendChild(closeBtn);
+  document.body.appendChild(div);
+}
+
+async function applyKingPenalty(targetName, code, penaltyId, overlay){
+  const penalty=KING_PENALTIES.find(p=>p.id===penaltyId);
+  if(!penalty) return;
+  try{
+    // Salva penalità su Firebase
+    await fbSet('/tourneys/'+code+'/kingPenalties/'+encodeURIComponent(targetName),{
+      penalty:penaltyId, from:playerName, ts:Date.now(),
+      week:getTourneyWeekKey(), applied:false
+    });
+    await fbSet('/tourneys/'+code+'/usedPenalties/'+encodeURIComponent(targetName), penaltyId);
+    if(overlay) overlay.remove();
+    showMsg('👑 '+penalty.icon+' '+penalty.name+' inviato a '+targetName+'!','#ffd700');
+    flashScreen('rgba(255,215,0,.2)');
+    haptic([50,20,100,20,200]);
+  }catch(e){showMsg('Errore: '+e.message,'#ff4488');}
+}
+
+// ── Controlla se hai una penalità in arrivo ──
+let _penaltyCheckInt=null;
+async function checkIncomingReward(){
+  const code=localStorage.getItem('zivve_tourney_code');
+  if(!code||!playerName) return;
+  try{
+    const rew=await fbGet('/tourneys/'+code+'/kingRewards/'+encodeURIComponent(playerName));
+    if(!rew||rew.applied||rew.week!==getTourneyWeekKey()) return;
+    await fbSet('/tourneys/'+code+'/kingRewards/'+encodeURIComponent(playerName)+'/applied',true);
+    const r=KING_REWARDS.find(x=>x.id===rew.reward);
+    if(r) setTimeout(()=>{
+      showMsg('🎁 IL RE TI PREMIA: '+r.icon+' '+r.name+'!','#4af0d0');
+      flashScreen('rgba(74,240,208,.25)');
+      haptic([50,20,100]);
+      if(G&&G.running) applyRewardInGame(rew.reward);
+      else localStorage.setItem('zivve_pending_reward',rew.reward);
+    },1000);
+  }catch(e){}
+}
+
+function applyRewardInGame(rewId){
+  if(!G||!G.running) return;
+  switch(rewId){
+    case 'shield_gift':
+      applyPowerup('shield',CX+Math.cos(G.angle)*ORBIT_R,CY+Math.sin(G.angle)*ORBIT_R);
+      showMsg('🛡️ SCUDO DAL RE!','#44aaff'); break;
+    case 'life_gift':
+      G.lives=Math.min(G.lives+1,6);updateLivesUI();
+      showMsg('❤️ +1 VITA DAL RE!','#ff4488'); break;
+    case 'slow_gift':
+      G._slowActive=true;
+      G.activePowerup={key:'slow',timer:10*60,endTime:Date.now()+10000,savedSpeed:null};
+      showMsg('⏱️ SLOW DAL RE!','#8833ff'); break;
+    case 'score_gift':
+      G.scoreBonus=(G.scoreBonus||0)+200;
+      showMsg('⭐ +200 PUNTI DAL RE!','#ffd700'); break;
+    case 'shield_lock':
+      G.shieldActive=true;G._penaltyNoShield=0;
+      G.activePowerup={key:'shield',timer:30*60,savedSpeed:null};
+      showMsg('🔒 SCUDO ETERNO 30s DAL RE!','#44aaff'); break;
+  }
+}
+
+async function checkIncomingPenalty(){
+  const code=localStorage.getItem('zivve_tourney_code');
+  if(!code||!playerName) return;
+  try{
+    const pen=await fbGet('/tourneys/'+code+'/kingPenalties/'+encodeURIComponent(playerName));
+    if(!pen||pen.applied||pen.week!==getTourneyWeekKey()) return;
+    // Marca come applicata
+    await fbSet('/tourneys/'+code+'/kingPenalties/'+encodeURIComponent(playerName)+'/applied',true);
+    // Mostra notifica
+    const p=KING_PENALTIES.find(x=>x.id===pen.penalty);
+    if(p) setTimeout(()=>{
+      showMsg('👑 THE KING SAY: '+p.icon+' '+p.name+'!','#ff2244');
+      flashScreen('rgba(255,34,68,.35)');
+      haptic([200,50,200]);
+      // Applica penalità se in gioco
+      if(G&&G.running) applyPenaltyInGame(pen.penalty);
+      else localStorage.setItem('zivve_pending_penalty',pen.penalty);
+    },1000);
+  }catch(e){}
+}
+
+// ── Applica penalità durante la partita ──
+function applyPenaltyInGame(penId){
+  if(!G||!G.running) return;
+  switch(penId){
+    case 'freeze':
+      G._penaltyFreeze=10*60; // 10s
+      showMsg('❄️ THE KING SAY: CONGELATO 10s!','#88ccff');
+      flashScreen('rgba(136,204,255,.2)');
+      break;
+    case 'invert':
+      G._penaltyInvert=10*60; // 10s controlli invertiti
+      showMsg('🔄 THE KING SAY: INVERTITO 10s!','#ff8844');
+      flashScreen('rgba(255,136,68,.2)');
+      break;
+    case 'life':
+      // Applicata a inizio partita — se in partita toglie subito
+      if(G.lives>1){G.lives--;updateLivesUI();}
+      showMsg('💀 THE KING SAY: -1 VITA!','#ff2244');
+      flashScreen('rgba(255,34,68,.45)');
+      haptic([200,50,200]);
+      break;
+    case 'slowforce':
+      G._slowActive=true;
+      G.activePowerup={key:'slow',timer:20*60,endTime:Date.now()+20000,savedSpeed:null};
+      showMsg('🐌 THE KING SAY: ULTRA SLOW 20s!','#8833ff');
+      break;
+    case 'blind':
+      G._penaltyBlind=5*60; // 5s solo sfera visibile
+      showMsg('👁️ THE KING SAY: SCHERMO BUIO 5s!','#444');
+      break;
+    case 'bighit':
+      G._penaltyBigHit=20*60; // 20s hitbox doppia
+      showMsg('🎯 THE KING SAY: HITBOX x2 per 20s!','#ff8844');
+      break;
+    case 'speed':
+      G._penaltySpeed=20*60;
+      G.speed=Math.min(G.speed*3,20);
+      showMsg('⚡ THE KING SAY: TURBO x3 per 20s!','#ffe566');
+      break;
+    case 'zigforce':
+      // Campo pieno di zigzag per 10s (1 ogni 2s)
+      G._penaltyZigStorm=10*60;
+      for(let i=0;i<5;i++) setTimeout(()=>{if(G&&G.running)spawnZigzagWave();},i*2000);
+      showMsg('🔀 THE KING SAY: ZAP STORM 10s!','#ffaa00');
+      break;
+    case 'noshield':
+      G.shieldActive=false;
+      G._penaltyNoShield=1; // flag una tantum
+      if(G.activePowerup&&G.activePowerup.key==='shield') clearPowerup();
+      // Rimuovi anche scudi in campo
+      G.enemies=G.enemies.filter(e=>e.type.key!=='shield');
+      showMsg('🛡️ THE KING SAY: SCUDO RIMOSSO!','#44aaff');
+      flashScreen('rgba(68,170,255,.2)');
+      break;
+    case 'target':
+      G._penaltyTarget=30*60; // fino a fine partita circa
+      showMsg('👑 THE KING SAY: SEI IL BERSAGLIO!','#ffd700');
+      flashScreen('rgba(255,215,0,.2)');
+      break;
+  }
+}
+
+// ── Update penalità nel game loop ──
+function updatePenalties(){
+  if(!G||!G.running) return;
+  // Freeze: nemici accelerano
+  if(G._penaltyFreeze>0){
+    G._penaltyFreeze--;
+    if(G._penaltyFreeze===0) showMsg('❄️ Penalità terminata','#88ccff');
+  }
+  // Invert: ogni tap va nella direzione opposta
+  if(G._penaltyInvert>0){
+    G._penaltyInvert--;
+    if(G._penaltyInvert===0){
+      showMsg('🔄 Controlli ripristinati','#ff8844');
+    }
+  }
+  // Blind: schermo quasi nero
+  if(G._penaltyBlind>0){
+    G._penaltyBlind--;
+  }
+  // BigHit già gestito in hitR
+  if(G._penaltyBigHit>0) G._penaltyBigHit--;
+  // Speed
+  if(G._penaltySpeed>0){
+    G._penaltySpeed--;
+    if(G._penaltySpeed===0){
+      G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
+      showMsg('⚡ Turbo terminato','#ffe566');
+    }
+  }
+  // NoShield
+  if(G._penaltyNoShield>0) G._penaltyNoShield--;
+  // Target: nemici inseguono giocatore
+  if(G._penaltyTarget>0){
+    G._penaltyTarget--;
+    const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R;
+    G.enemies.forEach(e=>{
+      if(e.type.isPowerup||e._isBoss||e._isDragon) return;
+      const dx=px-e.x,dy=py-e.y,dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+      e.vx=e.vx*.7+(dx/dist)*1.2*.3;
+      e.vy=e.vy*.7+(dy/dist)*1.2*.3;
+    });
+    if(G._penaltyTarget===0) showMsg('👑 Penalità terminata','#ffd700');
+  }
+}
+
+// ── MOSTRA TORNEO SCREEN ──
+async function showTourneyScreen(){
+  const code=localStorage.getItem('zivve_tourney_code');
+  const week=localStorage.getItem('zivve_tourney_week');
+  const isActive=code&&week===getTourneyWeekKey();
+
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:200;display:flex;flex-direction:column;align-items:center;padding:24px;gap:10px;font-family:Orbitron,sans-serif;overflow-y:auto';
+
+  let html='<div style="font-size:11px;letter-spacing:.3em;color:#ffd700;margin-bottom:4px">🏆 TORNEO TRA AMICI</div>';
+
+  if(isActive){
+    html+='<div style="font-size:13px;color:#4af0d0;font-weight:700;margin-bottom:4px">Codice: <span style="color:#ffd700;letter-spacing:.2em">'+code+'</span></div>';
+    html+='<div style="font-size:10px;color:rgba(200,220,255,.5);margin-bottom:12px">Invia questo codice ai tuoi amici</div>';
+
+    // Carica classifica torneo
+    try{
+      const t=await fbGet('/tourneys/'+code);
+      if(t&&t.members){
+        const rows=Object.values(t.members).sort((a,b)=>b.score-a.score);
+        html+='<div style="width:100%;max-width:320px;background:rgba(255,255,255,.03);border:1px solid rgba(74,240,208,.15);border-radius:8px;padding:12px;margin-bottom:8px">';
+        html+='<div style="font-size:10px;color:rgba(200,220,255,.5);margin-bottom:8px;letter-spacing:.15em">CLASSIFICA SETTIMANALE</div>';
+        rows.forEach(function(r,i){
+          const isKing=i===0,isMe=r.name===playerName;
+          const rankIcon=isKing?'👑':(i+1)+'.';
+          const nameCol=isMe?'#4af0d0':'#fff';
+          const nameW=isMe?'700':'400';
+          const scoreCol=isKing?'#ffd700':'rgba(200,220,255,.7)';
+          html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+            '<span style="font-size:14px">'+rankIcon+'</span>'+
+            '<span style="flex:1;color:'+nameCol+';font-size:11px;font-weight:'+nameW+'">'+r.name+(isMe?' ◀':'')+'</span>'+
+            '<span style="color:'+scoreCol+';font-size:11px">'+r.score+' pt</span></div>';
+        });
+        html+='</div>';
+
+        // Bottone King Say se sei il leader
+        if(rows[0]&&rows[0].name===playerName&&rows.length>1){
+          html+='<div style="width:100%;max-width:320px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.3);border-radius:8px;padding:12px;text-align:center;margin-bottom:8px">';
+          html+='<div style="font-size:10px;color:#ffd700;margin-bottom:4px">👑 SEI IL RE DI QUESTA SETTIMANA</div>';
+          html+='<div style="font-size:9px;color:rgba(200,220,255,.5);margin-bottom:8px">Puoi penalizzare un giocatore del torneo</div>';
+          const _ksCode=code;const _ksBtnEl=document.createElement('button');_ksBtnEl.textContent='👑 THE KING SAY';_ksBtnEl.style.cssText='background:linear-gradient(135deg,#ffd700,#ff8800);color:#000;border:none;border-radius:6px;padding:10px 20px;font-weight:900;font-size:11px;cursor:pointer;font-family:Orbitron,sans-serif';_ksBtnEl.onclick=function(){this.closest('div').parentElement.remove();activateKingSay(_ksCode);};html+='<div id="_ksBtnSlot"></div>';
+          html+='</div>';
+        }
+      }
+    }catch(e){}
+  } else {
+    html+='<div style="font-size:11px;color:rgba(200,220,255,.6);margin-bottom:16px;text-align:center">Crea un torneo o unisciti con un codice</div>';
+  }
+
+  div.innerHTML=html;
+  const _ks=div.querySelector('#_ksBtnSlot');if(_ks&&typeof _ksBtnEl!=='undefined')_ks.replaceWith(_ksBtnEl);
+
+  // Bottoni azioni
+  const btnRow=document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;max-width:320px';
+
+  if(!isActive){
+    const btnCreate=document.createElement('button');
+    btnCreate.textContent='➕ CREA TORNEO';
+    btnCreate.style.cssText='background:linear-gradient(135deg,#4af0d0,#0088cc);color:#000;border:none;border-radius:6px;padding:12px 20px;font-weight:900;font-size:11px;cursor:pointer;font-family:Orbitron,sans-serif';
+    btnCreate.onclick=async()=>{
+      const newCode=await createTourney();
+      div.remove();
+      showMsg('✅ Torneo creato! Codice: '+newCode,'#4af0d0');
+      setTimeout(showTourneyScreen,500);
+    };
+    btnRow.appendChild(btnCreate);
+  }
+
+  const btnJoin=document.createElement('button');
+  btnJoin.textContent=isActive?'🔄 AGGIORNA':'🔗 UNISCITI';
+  btnJoin.style.cssText='background:rgba(74,240,208,.1);border:1px solid rgba(74,240,208,.3);color:#4af0d0;padding:12px 20px;border-radius:6px;font-family:Orbitron,sans-serif;font-size:11px;cursor:pointer';
+  btnJoin.onclick=isActive?()=>{div.remove();setTimeout(showTourneyScreen,100);}:()=>{
+    const inputCode=prompt('Inserisci il codice torneo:');
+    if(inputCode) joinTourney(inputCode).then(ok=>{if(ok){div.remove();setTimeout(showTourneyScreen,500);}});
+  };
+  btnRow.appendChild(btnJoin);
+
+  if(isActive){
+    const btnShare2=document.createElement('button');
+    btnShare2.textContent='📤 CONDIVIDI CODICE';
+    btnShare2.style.cssText='background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:#ffd700;padding:12px 20px;border-radius:6px;font-family:Orbitron,sans-serif;font-size:11px;cursor:pointer';
+    btnShare2.onclick=()=>{
+      const text='🏆 Unisciti al mio torneo ZIVVE! Codice: '+code+' — '+window.location.href;
+      navigator.share?navigator.share({title:'ZIVVE Torneo',text,url:window.location.href}):
+        navigator.clipboard.writeText(text).then(()=>showMsg('📋 Copiato!','#ffd700'));
+    };
+    btnRow.appendChild(btnShare2);
+  }
+
+  const closeBtn2=document.createElement('button');
+  closeBtn2.textContent='← CHIUDI';
+  closeBtn2.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:10px';
+  closeBtn2.onclick=()=>div.remove();
+  btnRow.appendChild(closeBtn2);
+
+  div.appendChild(btnRow);
+  document.body.appendChild(div);
+}
+
 async function endGame(){
   G.running=false;
   window._inGame=false;
@@ -3967,15 +5834,22 @@ async function endGame(){
   document.getElementById('c').style.display='none';
   trackEvent('game_end',{score:G.score,level:G.level,time:Math.floor(G.frameCount/60)});
   const isRec=G.score>bestScore;
-  if(isRec){bestScore=G.score;localStorage.setItem('drift_best',bestScore);}
+  if(isRec){bestScore=G.score;localStorage.setItem('drift_best',bestScore);try{_zPlayRecordSound();}catch(e){}}
+  checkBounceBack(G.score);
+  const _hasBB=hasBounceBack()&&!isRec;
+  consumeBounceBack();
+  // Aggiungi XP
+  const _bbMult=hasBounceBack()?2:1;
+  const _xpGained=Math.floor(calcXPForGame(G.score,G.level,Math.floor(G.frameCount/60),G.nearMissStreak||0,G.perfectDodgeCount||0)*getBPXPMultiplier()*_bbMult);
+  const _newXP=addXP(_xpGained);
+  syncAccountToFirebase();
   const secs=Math.floor(G.frameCount/60);
   if(playerName){
     saveMockLB(playerName,G.score);
     // Aspetta il salvataggio su Firebase, poi ricarica la classifica
     lbPost(playerName,G.score).then(()=>{
-      // Invalida la cache locale per forzare rilettura da Firebase
       try{localStorage.removeItem('zivve_lb_cache');}catch(e){}
-      setTimeout(()=>loadLB(),800);
+      setTimeout(()=>{loadLB();updateRival();},800);
     });
   }
   maybeNotifyNearRecord(G.score);
@@ -3987,6 +5861,9 @@ async function endGame(){
   setTimeout(()=>isRec?sndNewRecord():sndGameOverNoRecord(),350);
   recordDailyPlay(G.score);updateStreakDisplay();
   if(playerName) recordWeeklyScore(G.score);
+  if(playerName&&playerName!=='ZIVVER') postSeasonScore(playerName,G.score);
+  if(playerName&&playerName!=='ZIVVER') postLVSScore(G.score);
+  updateTourneyScore(G.score);
   const streak=parseInt(localStorage.getItem('drift_streak')||'0');
   const weeklyMult=getWeeklyMultiplier();
   const playerTitle=getPlayerTitle();
@@ -4003,7 +5880,17 @@ async function endGame(){
   if(G.survivedZigzag){const z=parseInt(localStorage.getItem('drift_zigzag')||'0')+1;localStorage.setItem('drift_zigzag',z);}
   // Save country with score
   if(playerCountry&&playerName) saveMockLB(playerName,G.score);
+  incrementSessionStreak();
   document.getElementById('goScore').textContent=G.score;
+  // Mostra progress verso prossimo livello account
+  const _nextLv=getAccountLevel();
+  const _curXP=getAccountXP();
+  const _curLv=getAccountLevel();
+  const _goXPEl=document.getElementById('goXPProgress');
+  if(_goXPEl&&_nextLv){
+    const _pct=Math.min(100,Math.round((_curXP-_curLv.xp)/(_nextLv.xp-_curLv.xp)*100));
+    _goXPEl.innerHTML='<div style="font-size:10px;color:rgba(200,220,255,.6);margin-bottom:3px;letter-spacing:.08em">'+_curLv.name+' → '+_nextLv.name+'</div><div style="height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+_pct+'%;background:'+_curLv.color+';border-radius:3px;transition:width 1s ease"></div></div><div style="font-size:9px;color:rgba(200,220,255,.5);margin-top:2px">'+_pct+'% — mancano '+(_nextLv.xp-_curXP)+' XP</div>';
+  }
   document.getElementById('goBest').textContent=bestScore;
   document.getElementById('goBest').classList.toggle('record',isRec);
   document.getElementById('recBadge').style.display=isRec?'inline-block':'none';
@@ -4016,10 +5903,29 @@ async function endGame(){
   // Messaggio motivazionale
   const _mot=document.getElementById('goMotivation');
   if(_mot){
-    const _msgs=['Ancora! Ce la fai!','Stai migliorando 💪','Quasi! Riprova!','Concentrazione — sei pronto!','Una partita ancora? 🎯'];
-    _mot.textContent=_msgs[Math.floor(Math.random()*_msgs.length)];
+    // Messaggio contestuale basato sul gap dal record
+    const _gap=bestScore-G.score;
+    let _motivMsg;
+    if(_gap<=0) _motivMsg='🏆 NUOVO RECORD! Sei il migliore!';
+    else if(_gap<=20) _motivMsg='😤 A soli '+_gap+' punti dal record — ANCORA!';
+    else if(_gap<=50) _motivMsg='⚡ '+_gap+' punti al record. Quasi!';
+    else if(_gap<=150) _motivMsg='💪 '+_gap+' punti al record — ci puoi arrivare';
+    else _motivMsg='🎯 Batti il tuo record: '+bestScore+' pt';
+    _mot.textContent=_motivMsg;
   }
   buildShareCard(G.score,G.level,secs,isRec);
+  updateXPBar();
+  // Aggiorna pulsante replay
+  const _rbtn=document.getElementById('replayBtn');
+  if(_rbtn) _rbtn.style.opacity=hasFullReplay()?'1':'0.3';
+  // Bounce back banner
+  const _bbEl=document.getElementById('bounceBackBanner');
+  if(_bbEl){
+    if(!isRec&&G.score<bestScore*0.8){
+      _bbEl.style.display='block';
+      _bbEl.innerHTML='⚡ <b>XP x2</b> sulla prossima partita — non sprecarla!';
+    } else _bbEl.style.display='none';
+  }
   // Challenge post-game routing
   if(CH.mode==='bot_challenge'){ afterBotGame(G.score); show('overOverlay');loadLB();applyLang(); }
   else if(CH.mode==='survival'){
@@ -4031,7 +5937,21 @@ async function endGame(){
   else if(CH.mode==='async'&&CH.roomCode){ afterAsyncGame(G.score); }
   else if(CH.mode==='sync'&&CH.roomCode){ clearInterval(CH.hudPoll); updateSyncScore(G.score).then(()=>setTimeout(showSyncResult,1500)); }
   else if(CH.mode==='tournament'&&CH.roomCode){ afterTourneyRound(G.score); }
-  else { show('overOverlay'); setTimeout(()=>loadLB(),1500); applyLang(); if(!playerName)setTimeout(()=>checkName(()=>{}),600); }
+  else {
+    // Score cresce ancora 1.5s prima del game over — sensazione "quasi ce la facevo"
+    const _goFinalScore=G.score;
+    const _goScoreEl=document.getElementById('goScore');
+    let _goFake=_goFinalScore;
+    const _goInt=setInterval(()=>{_goFake+=Math.floor(Math.random()*4)+1;if(_goScoreEl)_goScoreEl.textContent=_goFake;},60);
+    setTimeout(()=>{
+      clearInterval(_goInt);
+      if(_goScoreEl)_goScoreEl.textContent=_goFinalScore; // ripristina score reale
+      show('overOverlay');
+      setTimeout(()=>loadLB(),800);
+      applyLang();
+    },1600);
+    if(!playerName)setTimeout(()=>checkName(()=>{}),600);
+  }
 
   // Always update sync score every 5s while alive (moved here from loop for perf)
   if((CH.mode==='sync')&&CH.roomCode) updateSyncScore(G.score);
@@ -4043,7 +5963,24 @@ async function endGame(){
 async function loadLB(){try{const st=document.getElementById('lbStatus');if(st)st.textContent=T('loading');const rows=await lbGet(15);const el=document.getElementById('lbRows');if(!el)return;renderLB(rows,'lbRows');}catch(e){console.log('[LB] loadLB error:',e);}}
 
 /* showLeaderboard_dup_removed */
-function renderLB(rows,cid){const el=document.getElementById(cid);if(!el)return;if(!rows||!rows.length){el.innerHTML=`<div id="lbStatus">Be the first!</div>`;return;}el.innerHTML=rows.map((r,i)=>{const isMe=r.name===playerName;const medal=i===0?'gold':i===1?'silver':i===2?'bronze':'';return `<div class="lb-row${isMe?' lb-me':''}"><span class="lb-rank${medal?' '+medal:''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span><span class="lb-name">${r.name}${isMe?' ◀':''}</span><span class="lb-score">${r.score}</span></div>`;}).join('');}
+function renderLB(rows,cid){
+  const el=document.getElementById(cid);if(!el)return;
+  if(!rows||!rows.length){el.innerHTML='<div id="lbStatus">Be the first!</div>';return;}
+  el.innerHTML=rows.map((r,i)=>{
+    const isMe=r.name===playerName;
+    const rankColors=['#ffd700','#c0c0c0','#cd7f32'];
+    const rankBg=i<3?`background:rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},.08);border-left:3px solid ${rankColors[i]||'transparent'};`:'';
+    const nameStyle=isMe?'color:#4af0d0;font-weight:900;':'';
+    const rankIcon=i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:rgba(200,220,255,.4);font-size:10px">${i+1}</span>`;
+    // Badge livello se disponibile (da Firebase players)
+    const lvBadge=TESTER_NAMES.includes(r.name)?'<span style="font-size:9px;color:#ffd700;margin-left:3px">★</span>':'';
+    return `<div class="lb-row${isMe?' lb-me':''}" style="${rankBg}padding:7px 10px;border-radius:4px;margin-bottom:2px">
+      <span class="lb-rank">${rankIcon}</span>
+      <span class="lb-name" style="${nameStyle}">${r.name}${lvBadge}${isMe?' ◀':''}</span>
+      <span class="lb-score" style="${i===0?'color:#ffd700':''}">${r.score}</span>
+    </div>`;
+  }).join('');
+}
 
 // ══════════════════════════════════════
 //  SHARE CARD
@@ -4978,6 +6915,29 @@ function saveAccountData(data){
 }
 
 // Apri schermata profilo — carica dati
+
+// ── Rivalità King Say ──
+function getKingRivalryText(){
+  const code=localStorage.getItem('zivve_tourney_code');
+  if(!code) return '';
+  // Legge da Firebase async — aggiorna il display
+  fbGet('/tourneys/'+code+'/kingPenalties/'+encodeURIComponent(playerName)).then(pen=>{
+    if(!pen||pen.week!==getTourneyWeekKey()) return;
+    const p=KING_PENALTIES.find(x=>x.id===pen.penalty);
+    const el=document.getElementById('rivalryBanner');
+    if(el&&p) el.innerHTML='<span style="color:#ff4488">'+p.icon+' '+pen.from+' ti ha '+p.name.toLowerCase()+'</span> questa settimana — <span style="color:#ffd700">diventa re e vendica!</span>';
+  }).catch(()=>{});
+  fbGet('/tourneys/'+code+'/usedPenalties').then(used=>{
+    if(!used) return;
+    const victims=Object.keys(used).filter(k=>k!==playerName);
+    if(!victims.length) return;
+    const el=document.getElementById('rivalryBanner');
+    if(el&&el.innerHTML===''){
+      el.innerHTML='👑 Hai penalizzato: <span style="color:#ffd700">'+victims.join(', ')+'</span>';
+    }
+  }).catch(()=>{});
+}
+
 function showProfile(){
   const s  = buildLiveStats();
   const acc = getAccountData();
@@ -5328,8 +7288,189 @@ function recordReplayFrame(){
   if(replayBuffer.length>REPLAY_MAX) replayBuffer.shift();
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  FULL GAME RECORDING — Video fedele del canvas
+// ══════════════════════════════════════════════════════════════
+let _fullRecorder=null,_fullChunks=[],_fullRecActive=false;
+let _lastFullVideoBlob=null,_lastFullVideoURL=null;
+
+function startFullGameRecording(){
+  if(!window.MediaRecorder) return;
+  // Assicurati che il canvas sia visibile
+  const canvas=document.getElementById('c');
+  if(!canvas||canvas.style.display==='none'){
+    setTimeout(startFullGameRecording,300);
+    return;
+  }
+  // Pulisci registrazione precedente
+  if(_lastFullVideoURL){try{URL.revokeObjectURL(_lastFullVideoURL);}catch(e){}}
+  _lastFullVideoBlob=null;_lastFullVideoURL=null;
+  _fullChunks=[];
+  try{
+    const canvas=document.getElementById('c');
+    const stream=canvas.captureStream(30);
+    // Scegli miglior codec disponibile
+    const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4']
+      .find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
+    _fullRecorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:1200000});
+    _fullRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0) _fullChunks.push(e.data);};
+    _fullRecorder.onstop=()=>{
+      if(!_fullChunks.length){console.log('[REC] Nessun chunk disponibile');return;}
+      _lastFullVideoBlob=new Blob(_fullChunks,{type:mimeType});
+      _lastFullVideoURL=URL.createObjectURL(_lastFullVideoBlob);
+      console.log('[REC] Video pronto:',Math.round(_lastFullVideoBlob.size/1024),'KB',mimeType);
+      // Abilita pulsante replay nel game over
+      const _rb=document.getElementById('replayBtn');
+      if(_rb){_rb.style.opacity='1';_rb.title='Replay disponibile';}
+    };
+    _fullRecorder.start(500); // chunk ogni 500ms — più preciso
+    _fullRecActive=true;
+    console.log('[REC] Registrazione avviata — codec:',mimeType);
+  }catch(e){
+    console.log('[REC] MediaRecorder non disponibile:',e.message);
+    _fullRecActive=false;
+  }
+}
+
+function stopFullGameRecording(){
+  if(_fullRecorder&&_fullRecActive){
+    try{
+      _fullRecorder.requestData(); // flush chunk finale
+      _fullRecorder.stop();
+    }catch(e){}
+    _fullRecActive=false;
+  }
+}
+
+function hasFullReplay(){ return !!_lastFullVideoBlob; }
+
+// ── Overlay replay video ──
+function showFullReplay(){
+  if(!_lastFullVideoBlob){
+    showMsg('Nessun replay disponibile','#ff6633');
+    return;
+  }
+  // Crea overlay
+  const overlay=document.createElement('div');
+  overlay.id='fullReplayOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+
+  // Video
+  const vid=document.createElement('video');
+  vid.src=_lastFullVideoURL;
+  vid.controls=false;
+  vid.autoplay=true;
+  vid.loop=true;
+  vid.playsInline=true;
+  vid.muted=false;
+  vid.style.cssText='width:min(100vw,480px);max-height:70vh;border-radius:8px;object-fit:cover;';
+
+  // Header
+  const header=document.createElement('div');
+  header.style.cssText='font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:.3em;color:#4af0d0;text-align:center;';
+  header.textContent='▶ REPLAY';
+
+  // Controls
+  const controls=document.createElement('div');
+  controls.style.cssText='display:flex;gap:10px;flex-wrap:wrap;justify-content:center;';
+
+  // Pulsante Play/Pausa
+  const btnPlay=document.createElement('button');
+  btnPlay.textContent='⏸';
+  btnPlay.style.cssText='background:rgba(74,240,208,.15);border:1px solid rgba(74,240,208,.4);color:#4af0d0;padding:10px 18px;border-radius:6px;font-size:18px;cursor:pointer;';
+  btnPlay.onclick=()=>{
+    if(vid.paused){vid.play();btnPlay.textContent='⏸';}
+    else{vid.pause();btnPlay.textContent='▶';}
+  };
+
+  // Pulsante Riavvolgi
+  const btnRewind=document.createElement('button');
+  btnRewind.textContent='⏮';
+  btnRewind.style.cssText=btnPlay.style.cssText;
+  btnRewind.onclick=()=>{vid.currentTime=0;vid.play();btnPlay.textContent='⏸';};
+
+  // Pulsante Download
+  const btnDl=document.createElement('button');
+  btnDl.textContent='⬇ SALVA';
+  btnDl.style.cssText='background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px 18px;border-radius:6px;font-size:11px;cursor:pointer;font-family:Orbitron,sans-serif;letter-spacing:.1em;';
+  btnDl.onclick=()=>{
+    const a=document.createElement('a');
+    a.href=_lastFullVideoURL;
+    a.download='zivve-replay.webm';
+    a.click();
+  };
+
+  // Pulsante Condividi
+  const btnShare=document.createElement('button');
+  btnShare.textContent='📤 CONDIVIDI';
+  btnShare.style.cssText='background:linear-gradient(135deg,#4af0d0,#0088cc);border:none;color:#000;padding:10px 18px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:900;font-family:Orbitron,sans-serif;letter-spacing:.05em;';
+  btnShare.onclick=async()=>{
+    const file=new File([_lastFullVideoBlob],'zivve-replay.webm',{type:_lastFullVideoBlob.type});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          title:'ZIVVE — Il mio replay',
+          text:'Guarda la mia partita su ZIVVE! Score: '+(G&&G.score||bestScore),
+          files:[file]
+        });
+      }catch(e){
+        // Fallback: download
+        btnDl.click();
+      }
+    } else {
+      btnDl.click();
+    }
+  };
+
+  // Progress bar video
+  const progress=document.createElement('div');
+  progress.style.cssText='width:min(100vw,480px);height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;cursor:pointer;';
+  const bar=document.createElement('div');
+  bar.style.cssText='height:100%;width:0%;background:#4af0d0;transition:width .5s linear;';
+  progress.appendChild(bar);
+  vid.ontimeupdate=()=>{
+    if(vid.duration) bar.style.width=(vid.currentTime/vid.duration*100)+'%';
+  };
+  progress.onclick=e=>{
+    const r=progress.getBoundingClientRect();
+    const pct=(e.clientX-r.left)/r.width;
+    if(vid.duration) vid.currentTime=pct*vid.duration;
+  };
+
+  // Chiudi
+  const btnClose=document.createElement('button');
+  btnClose.textContent='✕ CHIUDI';
+  btnClose.style.cssText='background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:8px 18px;border-radius:6px;font-size:10px;cursor:pointer;font-family:Orbitron,sans-serif;letter-spacing:.1em;';
+  btnClose.onclick=()=>{vid.pause();overlay.remove();};
+
+  controls.appendChild(btnRewind);
+  controls.appendChild(btnPlay);
+  controls.appendChild(btnDl);
+  controls.appendChild(btnShare);
+  overlay.appendChild(header);
+  overlay.appendChild(vid);
+  overlay.appendChild(progress);
+  overlay.appendChild(controls);
+  overlay.appendChild(btnClose);
+  document.body.appendChild(overlay);
+}
+
 function showReplay(){
-  if(!replayBuffer.length){showMsg('No replay yet','#ff6633');return;}
+  // Se il recorder è ancora attivo, aspetta
+  if(_fullRecActive){
+    showMsg('⏳ Elaborazione replay...','#4af0d0');
+    stopFullGameRecording();
+    setTimeout(showReplay,800);
+    return;
+  }
+  // Usa il video reale se disponibile
+  if(hasFullReplay()){
+    showFullReplay();
+    return;
+  }
+  // Fallback al replay semplificato se nessun video disponibile
+  if(!replayBuffer.length){showMsg('Gioca una partita per vedere il replay!','#ff6633');return;}
   const rc=document.getElementById('replayCanvas');
   const rui=document.getElementById('replayUI');
   rc.width=W;rc.height=H;rc.style.display='block';
@@ -5427,6 +7568,7 @@ async function loadLbTab(tab){
   el.innerHTML='<div style="color:var(--dim);text-align:center;font-size:11px;padding:12px;letter-spacing:.15em">Loading...</div>';
   let rows=[];
   if(tab==='world') rows=await lbGet(20);
+  else if(tab==='season'){ rows=await getSeasonLB(20); }
   else if(tab==='country'){
     const all=await lbGet(100);
     const myCountry=playerCountry||localStorage.getItem('drift_country')||'';
@@ -5626,7 +7768,12 @@ function startEventGame(){
     if(m.startLevel){
       G.level=m.startLevel;G.frameCount=m.startLevel*FRAMES_PER_LEVEL;
       G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
-      G.maxEnemies=Math.min(BASE_ENEMIES+Math.floor((G.level-1)*0.7),10);updateLevelUI();
+      // Flow design: picchi e respiri
+// Livelli "respiro" (multipli di 5 non boss): meno nemici
+const _isBreath=(G.level%5===0&&G.level%10!==0);
+const _isPeak=(G.level%10===1); // livello dopo boss: picco graduale
+const _baseMax=BASE_ENEMIES+Math.floor((G.level-1)*0.7);
+G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);updateLevelUI();
     }
     if(m.speed)G.speed*=m.speed;
     if(m.nmMult)G._nmMult=m.nmMult;
@@ -6412,15 +8559,29 @@ setTimeout(showWeeklyRewardBanner, 1200);
 
 // ── INIT FLOW: decide cosa mostrare ──
 (function initFlow(){
-  // Nascondi tutto come punto di partenza sicuro
   hideAll();
-  
+  checkIncomingChallenge();
+  checkReferral();
+  setTimeout(testerUnlockAll, 300);
+  updateLiveCounter();
+
   if(!localStorage.getItem('drift_onboarding_done')){
     setTimeout(startOnboarding, 300);
+    return;
+  }
+
+  // Mostra intro se non ancora vista (o sempre per i tester)
+  const _seen = localStorage.getItem('zivve_intro_seen')==='1';
+  const _name = localStorage.getItem('drift_name')||'';
+  const _isTst = typeof TESTER_NAMES!=='undefined'&&TESTER_NAMES.includes(_name.toUpperCase());
+
+  if(!_seen || _isTst){
+    // Mostra intro — poi menu principale
+    show('introOverlay');
+    runIntro();
   } else {
-    // Mostra menu principale
+    // Direttamente al menu
     show('startOverlay');
-    // Se nome non ancora scelto, mostra overlay nome sopra
     if(!localStorage.getItem('drift_name_set')){
       setTimeout(()=>show('nameOverlay'), 500);
     }
