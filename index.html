@@ -2606,8 +2606,8 @@ const PARAGON_BONUS_POWERS = [
 function getParagonBonusPower(){
   const acc=getAccountLevel();
   if(!acc.paragon||acc.paragon<1) return null;
-  // Hash deterministico: nome + paragon level → indice stabile
-  const seed=(playerName||'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)+acc.paragon*7;
+  // Casuale a ogni partita — seed dal timestamp d'avvio
+  const seed=(G&&G._paragonSeed)||Math.floor(Math.random()*PARAGON_BONUS_POWERS.length);
   return PARAGON_BONUS_POWERS[seed % PARAGON_BONUS_POWERS.length];
 }
 
@@ -3182,6 +3182,7 @@ function startGame(seed){
     CH.mode=null;
   }
   G={running:true,paused:false,angle:0,dir:1,speed:BASE_SPEED,
+     _paragonSeed:Math.floor(Math.random()*PARAGON_BONUS_POWERS.length),
      enemies:[],particles:[],trails:[],rings:[],shockwaves:[],
      bossActive:false,bossTimer:0,bossLevel:0,
      spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,scoreBonus:0,
@@ -3362,9 +3363,9 @@ function triggerPerfectDodge(px,py){
   G.dir*=-1;if(G.adapt)G.adapt.framesSinceTap=0;
   G.slowMo=90;
   G.perfectDodgeCount=(G.perfectDodgeCount||0)+1;
-  // Moltiplicatore: x1 → x2 → x4 → x8
+  // Moltiplicatore: x1 → x2 → x3 (cap — era x8, troppo exploit)
   const _oldMult=G._perfectMult||1;
-  G._perfectMult=G.perfectDodgeCount>=9?8:G.perfectDodgeCount>=6?4:G.perfectDodgeCount>=3?2:1;
+  G._perfectMult=G.perfectDodgeCount>=6?3:G.perfectDodgeCount>=3?2:1;
   if(G._perfectMult>_oldMult) showMsg('🔥 MOLTIPLICATORE x'+G._perfectMult+'!','#ffe566');
   // Achievement: 10 PD in una partita → ghost vision permanente sbloccata
   if(G.perfectDodgeCount===10){
@@ -3372,7 +3373,9 @@ function triggerPerfectDodge(px,py){
     showMsg('🏆 GHOST VISION SBLOCCATA PERMANENTEMENTE!','#8833ff');
     flashScreen('rgba(136,51,255,.3)');
   }
-  const bonus=50*(G._perfectMult||1)*G.perfectDodgeCount;G.scoreBonus=(G.scoreBonus||0)+bonus;
+  // Bonus decrescente: inizia a 50 ma scende con lo spam (min 5pt)
+  const bonus=Math.max(5, Math.floor(50*(G._perfectMult||1)/Math.max(1,G.perfectDodgeCount*0.4)));
+  G.scoreBonus=(G.scoreBonus||0)+bonus;
   for(let i=0;i<55;i++){
     const a=Math.random()*Math.PI*2,sp=Math.random()*9+3;
     G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
@@ -3467,7 +3470,7 @@ _gameCanvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
   e.stopPropagation();
   const now=Date.now();
-  if(now-_lastTapTime<80)return; // debounce 80ms anti-doppio
+  if(now-_lastTapTime<150)return; // throttle 150ms anti-spam (era 80ms)
   _lastTapTime=now;
   if(G&&G.running) reverseDir();
 },{passive:false});
@@ -3889,12 +3892,16 @@ function update(){
   if(!G||!G.running)return;
   G.frameCount++;
   updateOrbPower();
-  updateBoss();  const _sm2=(getScoreMultiplier()||1)*(typeof getParagonScoreBonus==='function'?getParagonScoreBonus():1);
+  updateBoss();  const _sm2=(getScoreMultiplier()||1);
   G.score=Math.floor(G.frameCount/5*(isNaN(_sm2)?1:_sm2))+(G.scoreBonus||0);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){
     G.level=nl;
     G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
+    // Decay scoreBonus: -5% per livello dopo il lv5 — frena l'accumulo infinito
+    if(G.level>5&&G.scoreBonus>0){
+      G.scoreBonus=Math.floor(G.scoreBonus*0.95);
+    }
     // Flow design: picchi e respiri
 // Livelli "respiro" (multipli di 5 non boss): meno nemici
 const _isBreath=(G.level%5===0&&G.level%10!==0);
@@ -3990,6 +3997,12 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
     const _freezeMult=G._penaltyFreeze>0?2.0:1;
     const spd=Math.hypot(e.vx,e.vy),maxSpd=(2.0+Math.min((G.level-1)*.08,2.5))*e.type.spdMult*_freezeMult;
     if(spd>maxSpd){e.vx=(e.vx/spd)*maxSpd;e.vy=(e.vy/spd)*maxSpd;}
+    // Velocità minima dopo lv20: i nemici non possono essere rallentati sotto soglia
+    if(G.level>=20&&!e.type.isPowerup&&!e._isDragon){
+      const _minSpd=0.6+Math.min((G.level-20)*0.03,0.8); // 0.6 al lv20, max 1.4 al lv46+
+      const _curSpd=Math.hypot(e.vx,e.vy);
+      if(_curSpd>0&&_curSpd<_minSpd){e.vx=(e.vx/_curSpd)*_minSpd;e.vy=(e.vy/_curSpd)*_minSpd;}
+    }
     if(e._frozen>0){e._frozen--;} else {e.x+=e.vx;e.y+=e.vy;}
     const dx=e.x-CX,dy=e.y-CY,dc=Math.hypot(dx,dy);
     if(dc>boundary){const nx=dx/dc,ny=dy/dc,dot=e.vx*nx+e.vy*ny;e.vx-=2*dot*nx;e.vy-=2*dot*ny;e.x=CX+nx*(boundary-2);e.y=CY+ny*(boundary-2);}
