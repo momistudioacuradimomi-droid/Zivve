@@ -1323,7 +1323,7 @@ function buildShop(){
         const _pbp=typeof getParagonBonusPower==='function'?getParagonBonusPower():null;
         const _pBonusTag=_pBonusPct>0
           ? `<div style="font-size:7px;color:#ffd700;letter-spacing:.06em;margin-top:2px;text-align:center">✦ PARAGON +${_pBonusPct}% potere</div>`
-            +(_pbp?`<div style="font-size:7px;color:#ffdd88;letter-spacing:.04em;margin-top:1px;text-align:center;line-height:1.4;padding:0 2px">⚡² ${_pbp.desc}</div>`:'')
+            +(_pbp?`<div style="font-size:7px;color:#ffdd88;letter-spacing:.04em;margin-top:1px;text-align:center;line-height:1.4;padding:0 2px">⚡² <b>${_pbp.name||''}</b> — ${_pbp.desc}</div>`:'')
           : '';
         const powerBadge=orb.power&&orb.power!=='none'
           ? `<div style="font-size:11px;color:#4af0d0;letter-spacing:.02em;line-height:1.4;margin-top:3px;text-align:center;padding:2px 4px">⚡ ${orb.powerDesc}</div>${_pBonusTag}`
@@ -1346,7 +1346,7 @@ function buildShop(){
       const hasPow=selOrb&&selOrb.power&&selOrb.power!=='none';
       let _txt=hasPow?'⚡ '+selOrb.powerDesc:'Nessun potere speciale';
       if(_pBnsPct>0) _txt+=' ✦ +'+_pBnsPct+'% (Paragon)';
-      selPowerEl.innerHTML=_txt+(_pbp2&&hasPow?'<br><span style="color:#ffdd88;font-size:11px">⚡² '+_pbp2.desc+'</span>':'');
+      selPowerEl.innerHTML=_txt+(_pbp2&&hasPow?'<br><span style="color:#ffdd88;font-size:11px">⚡² <b>'+(_pbp2.name||'')+'</b> — '+_pbp2.desc+'</span>':'');
       selPowerEl.style.color=hasPow?'#4af0d0':'rgba(200,220,255,.3)';
     }
   }
@@ -2523,7 +2523,7 @@ function applyOrbPower(){
 //  SISTEMA SECONDO POTERE PARAGON
 // ══════════════════════════════════════════════════════════════
 const PARAGON_BONUS_POWERS = [
-  { id:'pb_shield_pulse',  desc:'Ogni 45s: scudo automatico gratuito',
+  { id:'pb_shield_pulse', name:'Scudo Astrale', desc:'Ogni 45s: scudo automatico gratuito',
     apply: ()=>{ G.orbPowerData._pbShieldTimer=0; },
     update: ()=>{
       G.orbPowerData._pbShieldTimer=(G.orbPowerData._pbShieldTimer||0)+1;
@@ -2535,13 +2535,13 @@ const PARAGON_BONUS_POWERS = [
       }
     }
   },
-  { id:'pb_score_chain',   desc:'Near miss consecutivi: bonus +50pt a cascata',
+  { id:'pb_score_chain', name:'Cascata', desc:'Near miss consecutivi: bonus +50pt a cascata',
     apply: ()=>{ G.orbPowerData._pbChain=0; },
     update: ()=>{
       // gestito in onNearMiss via G.orbPowerData._pbChain
     }
   },
-  { id:'pb_slow_field',    desc:'I nemici rallentano del 10% ogni 30s (max 40%)',
+  { id:'pb_slow_field', name:'Campo Freddo', desc:'I nemici rallentano del 10% ogni 30s (max 40%)',
     apply: ()=>{ G.orbPowerData._pbSlowStacks=0; G.orbPowerData._pbSlowTimer=0; },
     update: ()=>{
       G.orbPowerData._pbSlowTimer=(G.orbPowerData._pbSlowTimer||0)+1;
@@ -2555,11 +2555,11 @@ const PARAGON_BONUS_POWERS = [
       }
     }
   },
-  { id:'pb_xp_surge',      desc:'+30% XP a fine partita',
+  { id:'pb_xp_surge', name:'Risonanza', desc:'+30% XP a fine partita',
     apply: ()=>{},
     update: ()=>{} // applicato in endGame via getParagonXPMult
   },
-  { id:'pb_life_steal',    desc:'Ogni 200pt: recuperi 1 vita (max 5)',
+  { id:'pb_life_steal', name:'Drenaggio', desc:'Ogni 200pt: recuperi 1 vita (max 5)',
     apply: ()=>{ G.orbPowerData._pbLifeThreshold=200; },
     update: ()=>{
       if(G.score>0&&G.score>=(G.orbPowerData._pbLifeThreshold||200)&&G.lives<5){
@@ -2570,21 +2570,30 @@ const PARAGON_BONUS_POWERS = [
       }
     }
   },
-  { id:'pb_shockwave',     desc:'Ogni 100pt: mini-shockwave che respinge i nemici',
-    apply: ()=>{ G.orbPowerData._pbShockThreshold=100; },
+  { id:'pb_prisma', name:'Prisma', desc:'Ogni near miss: anello che rallenta i nemici -20% (max 3, dura 4s)',
+    apply: ()=>{ G.orbPowerData._prismaRings=[]; },
     update: ()=>{
-      if(G.score>0&&G.score>=(G.orbPowerData._pbShockThreshold||100)){
-        G.orbPowerData._pbShockThreshold=(G.orbPowerData._pbShockThreshold||100)+100;
-        G.enemies.forEach(e=>{ if(!e.type.isPowerup){ const dx=e.x-CX,dy=e.y-CY,d=Math.max(Math.sqrt(dx*dx+dy*dy),1); e.vx+=(dx/d)*6; e.vy+=(dy/d)*6; }});
-        G.shockwaves.push({r:0,alpha:.5,grow:22,color:'#ffd700'});
-      }
+      if(!G.orbPowerData._prismaRings) G.orbPowerData._prismaRings=[];
+      const now=G.frameCount;
+      // Decade ogni anello dopo 4s
+      G.orbPowerData._prismaRings=G.orbPowerData._prismaRings.filter(ring=>now-ring.born<4*60);
+      // Rallenta nemici dentro gli anelli
+      const px=CX+Math.cos(G.angle)*ORBIT_R;
+      const py=CY+Math.sin(G.angle)*ORBIT_R;
+      G.orbPowerData._prismaRings.forEach(ring=>{
+        G.enemies.forEach(e=>{
+          if(e.type.isPowerup||e._prismaSlowed) return;
+          if(Math.hypot(e.x-px,e.y-py)<ring.r){ e.vx*=0.8; e.vy*=0.8; e._prismaSlowed=true; }
+        });
+      });
+      G.enemies.forEach(e=>{ e._prismaSlowed=false; });
     }
   },
-  { id:'pb_ghost_dodge',   desc:'1x per partita: attraversi un nemico senza danno',
+  { id:'pb_ghost_dodge', name:'Spettro', desc:'1x per partita: attraversi un nemico senza danno',
     apply: ()=>{ G.orbPowerData._pbGhostReady=true; },
     update: ()=>{} // gestito in registerHit
   },
-  { id:'pb_score_burst',   desc:'Ogni minuto sopravvissuto: +150pt istantanei',
+  { id:'pb_score_burst', name:'Cronoburst', desc:'Ogni minuto sopravvissuto: +150pt istantanei',
     apply: ()=>{ G.orbPowerData._pbBurstTimer=0; },
     update: ()=>{
       G.orbPowerData._pbBurstTimer=(G.orbPowerData._pbBurstTimer||0)+1;
@@ -2596,11 +2605,11 @@ const PARAGON_BONUS_POWERS = [
       }
     }
   },
-  { id:'pb_magnet_plus',   desc:'I power-up si attraggono da distanza doppia',
+  { id:'pb_magnet_plus', name:'Magnetar', desc:'I power-up si attraggono da distanza doppia',
     apply: ()=>{ G.orbPowerData._pbMagnet=true; },
     update: ()=>{} // gestito in update() loop tramite _pbMagnet
   },
-  { id:'pb_invert_shield', desc:'Quando perdi l\'ultima vita: 3s di invincibilità bonus',
+  { id:'pb_invert_shield', name:'Ultima Scintilla', desc:'Quando perdi l\'ultima vita: 3s di invincibilità bonus',
     apply: ()=>{ G.orbPowerData._pbInvertUsed=false; },
     update: ()=>{} // gestito in registerHit
   },
@@ -2620,6 +2629,10 @@ function applyParagonBonusPower(){
   if(!bp||!G.orbPowerData) return;
   G.orbPowerData._paragonBonusId=bp.id;
   try{ bp.apply(); }catch(e){}
+  // Notifica il giocatore del potere assegnato
+  setTimeout(()=>{
+    if(G&&G.running) showMsg('✦ PARAGON: '+bp.name,'#ffd700');
+  }, 1500);
 }
 
 function updateParagonBonusPower(){
@@ -2958,6 +2971,20 @@ function orbPowerOnNearMiss(){
 
   // ELEGANCE: zona più ampia (gestita in update collision)
   // FLUO_PINK: già gestito con near_miss_bonus
+
+  // PRISMA (paragon): aggiunge anello se attivo
+  if(G.orbPowerData&&G.orbPowerData._paragonBonusId==='pb_prisma'){
+    if(!G.orbPowerData._prismaRings) G.orbPowerData._prismaRings=[];
+    if(G.orbPowerData._prismaRings.length<3){
+      const px2=CX+Math.cos(G.angle)*ORBIT_R;
+      const py2=CY+Math.sin(G.angle)*ORBIT_R;
+      const ringR=ORBIT_R*(0.4+G.orbPowerData._prismaRings.length*0.15);
+      G.orbPowerData._prismaRings.push({born:G.frameCount, r:ringR});
+      // Anello visivo colorato
+      const cols=['#ff88ff','#88ffcc','#ffdd44'];
+      G.rings.push({x:px2,y:py2,r:0,alpha:.7,color:cols[G.orbPowerData._prismaRings.length-1]||'#ff88ff',grow:8});
+    }
+  }
   // CARNIVAL RUSH
   if(p==='carnival_rush'){
     d.dodgesCount=(d.dodgesCount||0)+1;
@@ -4850,6 +4877,23 @@ function drawPlayer(){
   }
   // Draw selected orb
   orb.draw(ctx,x,y,r);
+  // PRISMA: anelli colorati attivi
+  if(G.orbPowerData&&G.orbPowerData._paragonBonusId==='pb_prisma'&&G.orbPowerData._prismaRings&&G.orbPowerData._prismaRings.length>0){
+    const _pcols=['#ff88ff','#88ffcc','#ffdd44'];
+    G.orbPowerData._prismaRings.forEach((ring,i)=>{
+      const age=G.frameCount-ring.born;
+      const fadeOut=Math.max(0,1-age/(4*60));
+      ctx.save();
+      ctx.globalAlpha=fadeOut*0.45;
+      ctx.strokeStyle=_pcols[i%3];
+      ctx.lineWidth=2;
+      ctx.shadowBlur=8; ctx.shadowColor=_pcols[i%3];
+      ctx.setLineDash([5,5]);
+      ctx.beginPath(); ctx.arc(x,y,ring.r*(0.9+0.1*Math.sin(G.frameCount*0.1+i)),0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    });
+  }
   // LV5+: anello orbitante
   if(_acLv2>=5){
     ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle=_acColor;ctx.lineWidth=1.2;
