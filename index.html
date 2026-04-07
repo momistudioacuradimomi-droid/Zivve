@@ -2449,7 +2449,7 @@ function confirmStop(){
   show('stopOverlay');
 }
 function forceStop(){ hide('stopOverlay');G.running=false;G.paused=false;setTimeout(endGame,100); }
-function goMenu(){ hide('pauseOverlay');hide('stopOverlay');G.running=false;G.paused=false;showStart(); }
+function goMenu(){ hide('pauseOverlay');hide('stopOverlay');G.running=false;G.paused=false;_raceMode=false;_raceChoiceActive=false;document.querySelectorAll('#_raceChoiceOverlay,#_raceHUD,#_objHUD').forEach(el=>el.remove());showStart(); }
 
 // ══════════════════════════════════════
 //  START
@@ -3379,7 +3379,7 @@ function triggerPerfectDodge(px,py){
   G.perfectDodgeCount=(G.perfectDodgeCount||0)+1;
   // Moltiplicatore: x1 → x2 → x3 (cap — era x8, troppo exploit)
   const _oldMult=G._perfectMult||1;
-  G._perfectMult=G.perfectDodgeCount>=6?4:G.perfectDodgeCount>=3?2:1;
+  G._perfectMult=G.perfectDodgeCount>=9?8:G.perfectDodgeCount>=6?4:G.perfectDodgeCount>=3?2:1;
   if(G._perfectMult>_oldMult) showMsg('🔥 MOLTIPLICATORE x'+G._perfectMult+'!','#ffe566');
   // Achievement: 10 PD in una partita → ghost vision permanente sbloccata
   if(G.perfectDodgeCount===10){
@@ -3484,7 +3484,7 @@ _gameCanvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
   e.stopPropagation();
   const now=Date.now();
-  if(now-_lastTapTime<150)return; // throttle 150ms anti-spam (era 80ms)
+  if(now-_lastTapTime<80)return; // throttle 80ms anti-spam — sotto la finestra PD di 133ms
   _lastTapTime=now;
   if(G&&G.running) reverseDir();
 },{passive:false});
@@ -5199,8 +5199,8 @@ function getParagonPowerBonus(){
 // Bonus Paragon allo score
 function getParagonScoreBonus(){
   const acc=getAccountLevel();
-  if(!acc.paragon||acc.paragon===0) return 1;
-  return Math.min(1.5, 1+(acc.paragon*0.01));
+  if(!acc.paragon||acc.paragon===0) return 0;
+  return Math.min(0.5, acc.paragon*0.01);
 }
 
 // Aggiungi XP al giocatore
