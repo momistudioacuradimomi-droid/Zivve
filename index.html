@@ -3365,7 +3365,7 @@ function triggerPerfectDodge(px,py){
   G.perfectDodgeCount=(G.perfectDodgeCount||0)+1;
   // Moltiplicatore: x1 → x2 → x3 (cap — era x8, troppo exploit)
   const _oldMult=G._perfectMult||1;
-  G._perfectMult=G.perfectDodgeCount>=6?3:G.perfectDodgeCount>=3?2:1;
+  G._perfectMult=G.perfectDodgeCount>=6?4:G.perfectDodgeCount>=3?2:1;
   if(G._perfectMult>_oldMult) showMsg('🔥 MOLTIPLICATORE x'+G._perfectMult+'!','#ffe566');
   // Achievement: 10 PD in una partita → ghost vision permanente sbloccata
   if(G.perfectDodgeCount===10){
