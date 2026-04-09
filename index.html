@@ -4121,13 +4121,13 @@ let _racePowerups = [];
 let _raceChoiceActive = false;
 
 const RACE_POWERUPS = [
-  { id:'r_life',     icon:'❤️',  name:'+1 Vita',          apply:()=>{ G.lives=Math.min(G.lives+1,6); updateLivesUI(); } },
+  { id:'r_life',     icon:'❤️',  name:'+1 Vita',          apply:()=>{ G.lives=Math.min(G.lives+1,6); updateLivesUI(); showMsg('❤️ +1 Vita!','#ff4488'); } },
   { id:'r_shield',   icon:'🛡',  name:'Scudo Immediato',  apply:()=>{ const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R; applyPowerup('shield',px,py); } },
   { id:'r_slow',     icon:'🔮',  name:'Ultra Slow',       apply:()=>{ const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R; applyPowerup('slow',px,py); } },
   { id:'r_clear',    icon:'💥',  name:'Pulisci Campo',    apply:()=>{ G.enemies=G.enemies.filter(e=>e.type.isPowerup); flashScreen('rgba(255,229,102,.4)'); showMsg('💥 CAMPO PULITO!','#ffe566'); } },
   { id:'r_mult',     icon:'⚡',  name:'+20% Punteggio',   apply:()=>{ G._raceMult=(G._raceMult||1)+0.2; showMsg('⚡ +20% Punteggio!','#ffe566'); } },
   { id:'r_speed',    icon:'🐌',  name:'Nemici -20% vel',  apply:()=>{ G.enemies.forEach(e=>{if(!e.type.isPowerup){e.vx*=.8;e.vy*=.8;}}); showMsg('🐌 Nemici rallentati!','#4af0d0'); } },
-  { id:'r_lives2',   icon:'💖',  name:'+2 Vite',          apply:()=>{ G.lives=Math.min(G.lives+2,6); updateLivesUI(); } },
+  { id:'r_lives2',   icon:'💖',  name:'+2 Vite',          apply:()=>{ G.lives=Math.min(G.lives+2,6); updateLivesUI(); showMsg('💖 +2 Vite!','#ff4488'); } },
   { id:'r_xp',       icon:'✨',  name:'+100 XP Bonus',    apply:()=>{ addXP(100); showMsg('✨ +100 XP!','#4af0d0'); } },
 ];
 
@@ -7200,7 +7200,21 @@ function doNativeShare(){
 // ══════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════
-function updateLivesUI(){document.querySelectorAll('.heart').forEach((h,i)=>h.classList.toggle('dead',i>=G.lives));}
+function updateLivesUI(){
+  const container=document.getElementById('livesIcons');
+  if(!container) return;
+  const lives=G&&G.lives!==undefined?G.lives:3;
+  // Assicura che ci siano abbastanza cuori nel DOM
+  const current=container.querySelectorAll('.heart').length;
+  if(current<lives){
+    for(let i=current;i<lives;i++){
+      const h=document.createElement('div'); h.className='heart';
+      container.appendChild(h);
+    }
+  }
+  // Aggiorna stato dead/alive
+  container.querySelectorAll('.heart').forEach((h,i)=>h.classList.toggle('dead',i>=lives));
+}
 function updateLevelUI(){levelValEl.textContent=G.level;}
 let msgTimer;
 function showMsg(txt,color='#ffe566'){if(!txt)return;msgTextEl.textContent=txt;msgTextEl.style.color=color;msgTextEl.style.textShadow=`0 0 20px ${color}`;msgWrapEl.classList.add('show');clearTimeout(msgTimer);msgTimer=setTimeout(()=>msgWrapEl.classList.remove('show'),1100);}
