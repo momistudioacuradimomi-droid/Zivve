@@ -3220,6 +3220,7 @@ function startGame(seed){
   }
   G={running:true,paused:false,angle:0,dir:1,speed:BASE_SPEED,
      _paragonSeed:Math.floor(Math.random()*PARAGON_BONUS_POWERS.length),
+     _critXPBonus:0,_critCount:0,_lastNMDist:null,_lastNMHitR2:null,
      enemies:[],particles:[],trails:[],rings:[],shockwaves:[],
      bossActive:false,bossTimer:0,bossLevel:0,
      spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,scoreBonus:0,
@@ -3437,6 +3438,39 @@ function triggerPerfectDodge(px,py){
   // Bonus PD: 80pt base × moltiplicatore attivo
   const bonus=80*(G._perfectMult||1);
   G.scoreBonus=(G.scoreBonus||0)+bonus;
+
+  // ── COLPO CRITICO ──
+  // Si attiva se il PD è stato eseguito quasi a toccare il nemico
+  // Zona critica: tra hitR2 e hitR2×1.35 (fascia strettissima)
+  const _nmDist = G._lastNMDist||999;
+  const _nmHitR2 = G._lastNMHitR2||ORBIT_R*.13;
+  const _critZone = _nmHitR2*1.35; // fascia critica = 0-35% sopra la hitbox
+  let _isCrit = false;
+  if(_nmDist>0 && _nmDist<=_critZone){
+    // Probabilità basata sulla distanza: più vicino = più probabile (max 85%)
+    const _critProb = 0.85*(1-(_nmDist-_nmHitR2)/(_critZone-_nmHitR2));
+    _isCrit = Math.random()<_critProb;
+  }
+  G._lastNMDist=null; G._lastNMHitR2=null; // reset
+
+  if(_isCrit){
+    const _critXP=50;
+    G._critXPBonus=(G._critXPBonus||0)+_critXP;
+    const _critPts=Math.floor(bonus*0.5); // +50% punti bonus
+    G.scoreBonus=(G.scoreBonus||0)+_critPts;
+    G._critCount=(G._critCount||0)+1;
+    // Effetto visivo distinto
+    flashScreen('rgba(255,80,0,.35)');
+    for(let i=0;i<30;i++){
+      const a=Math.random()*Math.PI*2,sp=Math.random()*12+4;
+      G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+        life:60+Math.random()*30,color:['#ff4400','#ffaa00','#ffffff'][i%3],r:Math.random()*6+3});
+    }
+    for(let i=0;i<3;i++) G.shockwaves.push({r:i*15,alpha:.7,grow:18,color:'#ff6600'});
+    showMsg('🔥 CRITICO! +'+_critPts+' pt +'+_critXP+' XP','#ff6600');
+    setTimeout(()=>{ if(G&&G.running) addXP(_critXP); },200);
+    haptic([30,10,60,10,100]);
+  }
   for(let i=0;i<55;i++){
     const a=Math.random()*Math.PI*2,sp=Math.random()*9+3;
     G.particles.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
@@ -4429,6 +4463,9 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
         e._nm=true;
         G.nearMissStreak=(G.nearMissStreak||0)+1;
         G._totalNearMiss=(G._totalNearMiss||0)+1;
+        // Salva distanza minima dal nemico — usata per calcolare il critico
+        if(!G._lastNMDist||d<G._lastNMDist) G._lastNMDist=d;
+        if(!G._lastNMHitR2) G._lastNMHitR2=hitR2;
         // Aggiorna _lastNearMissFrame solo se la finestra PD non è già aperta
         // (evita che near miss multipli consecutivi blocchino il perfect dodge)
         if(G.frameCount-(G._lastNearMissFrame||0)>12){
@@ -7021,7 +7058,8 @@ async function endGame(){
   consumeBounceBack();
   // Aggiungi XP
   const _bbMult=hasBounceBack()?2:1;
-  const _objXPBonus = _objectiveDone&&_runObjective?_runObjective.xpBonus:0;
+  const _objXPBonus = (_objectiveDone&&_runObjective?_runObjective.xpBonus:0)+(G._critXPBonus||0);
+  if((G._critCount||0)>0) showMsg('🔥 '+G._critCount+' CRITICI — +'+G._critXPBonus+' XP bonus!','#ff6600');
   const _objMult = _objectiveDone&&G._objMultBonus?(1+G._objMultBonus):1;
   const _xpGained=Math.floor((calcXPForGame(G.score,G.level,Math.floor(G.frameCount/60),G.nearMissStreak||0,G.perfectDodgeCount||0)*getBPXPMultiplier()*_bbMult*getParagonBonusXPMult()*_objMult*getUpgradeXPMult())+_objXPBonus);
   const _newXP=addXP(_xpGained);
