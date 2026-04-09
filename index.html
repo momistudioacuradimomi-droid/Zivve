@@ -2605,7 +2605,7 @@ const PARAGON_BONUS_POWERS = [
       G.orbPowerData._pbBurstTimer=(G.orbPowerData._pbBurstTimer||0)+1;
       if(G.orbPowerData._pbBurstTimer>=60*60){
         G.orbPowerData._pbBurstTimer=0;
-        G.score+=150; G.scoreBonus=(G.scoreBonus||0)+150;
+        G.scoreBonus=(G.scoreBonus||0)+150;
         showMsg('✦ PARAGON — +150pt!','#ffd700');
         flashScreen('rgba(255,215,0,.15)');
       }
@@ -2752,7 +2752,7 @@ function updateOrbPower(){
     d.countdownTimer=(d.countdownTimer||0)+1;
     if(d.countdownTimer>=60*60){
       const bonus=Math.floor(G.frameCount/60)*10;
-      G.score+=bonus; d.countdownTimer=0;
+      G.scoreBonus=(G.scoreBonus||0)+bonus; d.countdownTimer=0;
       showMsg('🎆 BONUS COUNTDOWN! +'+bonus,'#ffdd44');
       flashScreen('rgba(255,220,50,.2)');
     }
@@ -2971,7 +2971,7 @@ function orbPowerOnNearMiss(){
   if(p==='gold_trail'){
     d.nearMissChain=(d.nearMissChain||0)+1;
     const bonus=d.nearMissChain*100;
-    G.score+=bonus;
+    G.scoreBonus=(G.scoreBonus||0)+bonus;
     if(d.nearMissChain>=3) showMsg('✨ GOLD CHAIN x'+d.nearMissChain+'! +'+bonus,'#ffe566');
   }
 
@@ -2995,7 +2995,7 @@ function orbPowerOnNearMiss(){
   if(p==='carnival_rush'){
     d.dodgesCount=(d.dodgesCount||0)+1;
     if(d.dodgesCount%10===0){
-      G.score+=200;
+      G.scoreBonus=(G.scoreBonus||0)+200;
       showMsg('🎉 CARNIVAL RUSH! +200','#ff8800');
       flashScreen('rgba(255,130,0,.2)');
     }
@@ -3012,7 +3012,7 @@ function orbPowerOnPerfect(){
     d.perfectChain=(d.perfectChain||0)+1;
     const mult=Math.min(d.perfectChain,8);
     const bonus=100*mult;
-    G.score+=bonus;
+    G.scoreBonus=(G.scoreBonus||0)+bonus;
     showMsg('⚡ PERFECT CHAIN x'+mult+'! +'+bonus,'#4af0d0');
   }
 
@@ -3220,7 +3220,7 @@ function startGame(seed){
   }
   G={running:true,paused:false,angle:0,dir:1,speed:BASE_SPEED,
      _paragonSeed:Math.floor(Math.random()*PARAGON_BONUS_POWERS.length),
-     _critXPBonus:0,_critCount:0,_lastNMDist:null,_lastNMHitR2:null,
+     _critXPBonus:0,_critCount:0,_lastNMDist:null,_lastNMHitR2:null,_scoreBase:0,
      enemies:[],particles:[],trails:[],rings:[],shockwaves:[],
      bossActive:false,bossTimer:0,bossLevel:0,
      spawnTimer:0,maxEnemies:BASE_ENEMIES,frameCount:0,score:0,scoreBonus:0,
@@ -4267,8 +4267,13 @@ function update(){
   upgradeLifeRegenTick();
   // Accumula near miss totali per obiettivo
   G._totalNearMiss = G._totalNearMiss||0;
-  updateBoss();  const _sm2=(getScoreMultiplier()||1)*getRaceMultiplier();
-  G.score=Math.floor(G.frameCount/3.5*(isNaN(_sm2)?1:_sm2))+(G.scoreBonus||0);
+  updateBoss();
+  const _sm2=(getScoreMultiplier()||1)*getRaceMultiplier();
+  // Score base: cresce di un incremento fisso ogni frame — non ricalcola da zero
+  // Evita oscillazioni da moltiplicatore variabile
+  const _scoreInc = (1/3.5)*(isNaN(_sm2)?1:_sm2);
+  G._scoreBase=(G._scoreBase||0)+_scoreInc;
+  G.score=Math.floor(G._scoreBase)+(G.scoreBonus||0);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){
     G.level=nl;
@@ -4455,19 +4460,27 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
     if(G.adapt.framesSinceTap>120)G.speed=Math.max(G.speed*.999,BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL*.7);
     const px2=CX+Math.cos(G.angle)*ORBIT_R,py2=CY+Math.sin(G.angle)*ORBIT_R;
     let nearCount=0;
+    let _hadNMThisFrame=false;
     for(const e of G.enemies){
       const d=Math.hypot(px2-e.x,py2-e.y);
       if(d<ORBIT_R*(getOrbPower()==='elegance'?0.27:0.22))nearCount++;
       const hitR2=ORBIT_R*.13*getHitboxMult()*(e.type.key==='heavy'?1.35:e.type.key==='fast'?.8:1);
+
+      // Reset _nm se il nemico è uscito dalla zona O se sono passati 120 frame (cooldown 2s)
+      if(e._nm&&(d>hitR2*1.6||(G.frameCount-(e._nmFrame||0))>120)){
+        e._nm=false; e._nmFrame=0;
+      }
+
       if(d>hitR2&&d<hitR2*1.6*getNMZoneMult()&&!e._nm){
         e._nm=true;
+        e._nmFrame=G.frameCount; // timestamp per il cooldown
+        _hadNMThisFrame=true;
         G.nearMissStreak=(G.nearMissStreak||0)+1;
         G._totalNearMiss=(G._totalNearMiss||0)+1;
         // Salva distanza minima dal nemico — usata per calcolare il critico
         if(!G._lastNMDist||d<G._lastNMDist) G._lastNMDist=d;
         if(!G._lastNMHitR2) G._lastNMHitR2=hitR2;
         // Aggiorna _lastNearMissFrame solo se la finestra PD non è già aperta
-        // (evita che near miss multipli consecutivi blocchino il perfect dodge)
         if(G.frameCount-(G._lastNearMissFrame||0)>10){
           G._lastNearMissFrame=G.frameCount;
         }
@@ -4476,7 +4489,7 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
         // ── PARAGON pb_score_chain: bonus +50pt a cascata sui near miss ──
         if(G.orbPowerData&&G.orbPowerData._paragonBonusId==='pb_score_chain'){
           G.orbPowerData._pbChain=(G.orbPowerData._pbChain||0)+1;
-          if(G.orbPowerData._pbChain>5){ G.orbPowerData._pbChain=1; } // reset dopo 5
+          if(G.orbPowerData._pbChain>5){ G.orbPowerData._pbChain=1; }
           const _pbBonus=G.orbPowerData._pbChain*50;
           G.scoreBonus=(G.scoreBonus||0)+_pbBonus;
           if(G.orbPowerData._pbChain>=2) showMsg('✦ CASCATA x'+G.orbPowerData._pbChain+'! +'+_pbBonus,'#ffd700');
@@ -4486,7 +4499,12 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
         if(G.nearMissStreak>=3){showMsg('🔥 NEAR MISS x'+G.nearMissStreak,'#ffee44');if(G.nearMissStreak%3===0)G.scoreBonus=(G.scoreBonus||0)+G.nearMissStreak*2;}
         const angle2=Math.atan2(py2-e.y,px2-e.x);
         sndNearMiss(600+Math.cos(angle2)*200+(G.nearMissStreak||1)*40);
-      } else if(d>hitR2*1.6){e._nm=false;}
+      }
+    }
+    // Reset streak se nessun NM negli ultimi 3 secondi
+    if(!_hadNMThisFrame&&G.nearMissStreak>0&&G.frameCount-(G._lastNearMissFrame||0)>180){
+      G.nearMissStreak=0;
+    }
     }
     G.adapt.nearMissAccum=(G.adapt.nearMissAccum||0)+nearCount;
     if(G.frameCount%180===0){if(G.adapt.nearMissAccum<3)G.speed=Math.min(G.speed*1.008,BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL*1.3+1.5);else if(G.adapt.nearMissAccum>15)G.speed=Math.max(G.speed*.994,BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL*.8);G.adapt.nearMissAccum=0;}
