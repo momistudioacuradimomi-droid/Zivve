@@ -4385,7 +4385,11 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
       if(e.type.isPowerup){
         if(e._isDragon){
           // Drago: schivarlo da vicino dà +500
-          if(Math.hypot(px-e.x,py-e.y)<hitR*3){
+          // Swept per drago
+          const _dSteps=Math.max(1,Math.ceil((G.speed*(Math.PI/180))*ORBIT_R/(hitR*3*0.8)));
+          let _dHit=false;
+          for(let _ds=0;_ds<=_dSteps&&!_dHit;_ds++){const _da=G.angle-G.speed*G.dir*(Math.PI/180)*(1-_ds/_dSteps);if(Math.hypot(CX+Math.cos(_da)*ORBIT_R-e.x,CY+Math.sin(_da)*ORBIT_R-e.y)<hitR*3)_dHit=true;}
+          if(_dHit){
             G.enemies.splice(i,1);
             G.scoreBonus=(G.scoreBonus||0)+500;
             showMsg('🐉 +500 DRAGONE!','#ffd700');
@@ -4395,7 +4399,11 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
           continue;
         }
         if(e._isBlackOrb){
-          if(Math.hypot(px-e.x,py-e.y)<hitR*2.5){
+          // Swept per sfera nera
+          const _bSteps=Math.max(1,Math.ceil((G.speed*(Math.PI/180))*ORBIT_R/(hitR*2.5*0.8)));
+          let _bHit=false;
+          for(let _bs=0;_bs<=_bSteps&&!_bHit;_bs++){const _ba=G.angle-G.speed*G.dir*(Math.PI/180)*(1-_bs/_bSteps);if(Math.hypot(CX+Math.cos(_ba)*ORBIT_R-e.x,CY+Math.sin(_ba)*ORBIT_R-e.y)<hitR*2.5)_bHit=true;}
+          if(_bHit){
             G.enemies.splice(i,1);
             G.lives=Math.min(G.lives+3,6);
             updateLivesUI();
@@ -4406,10 +4414,19 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
           }
           continue;
         }
-        // Power-up collection
+        // Power-up collection — swept per non perdere powerup a velocità alta
         const _pbMagnetBonus=(G.orbPowerData&&G.orbPowerData._pbMagnet)?2:1;
         const _collectR=hitR*2.4*(getOrbPower()==='powerup_magnet'?2.8:1)*(getOrbPower()==='harvest'?1.6:1)*_pbMagnetBonus;
-        if(Math.hypot(px-e.x,py-e.y)<_collectR){
+        const _puSteps=Math.max(1,Math.ceil((G.speed*(Math.PI/180))*ORBIT_R/(_collectR*0.8)));
+        let _puCollected=false;
+        for(let _psi=0;_psi<=_puSteps&&!_puCollected;_psi++){
+          const _pFrac=_psi/_puSteps;
+          const _pAngle=G.angle-G.speed*G.dir*(Math.PI/180)*(1-_pFrac);
+          const _pix=CX+Math.cos(_pAngle)*ORBIT_R;
+          const _piy=CY+Math.sin(_pAngle)*ORBIT_R;
+          if(Math.hypot(_pix-e.x,_piy-e.y)<_collectR){_puCollected=true;}
+        }
+        if(_puCollected){
           G.enemies.splice(i,1);
           applyPowerup(e.type.key,px,py);
           onFirstPowerup(e.type.key);
