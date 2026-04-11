@@ -4189,14 +4189,16 @@ function checkRaceWave(){
 function showRaceChoice(){
   if(!G||!G.running||_raceChoiceActive) return;
   _raceChoiceActive=true;
-  G.paused=true; // Pausa durante la scelta
+  // Non mette in pausa — attiva scudo immediato invece
+  G.shieldActive=true;
+  G._raceChoiceShield=true;
 
   // Pesca 3 opzioni casuali senza ripetizioni
   const shuffled=[..._RACE_POOL()].sort(()=>Math.random()-.5).slice(0,3);
 
   const overlay=document.createElement('div');
   overlay.id='_raceChoiceOverlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.92);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Orbitron,sans-serif;padding:24px';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.72);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Orbitron,sans-serif;padding:24px';
   overlay.innerHTML=`
     <div style="font-size:11px;letter-spacing:.4em;color:#4af0d0;margin-bottom:4px">🏁 ONDATA ${_raceWave} SUPERATA</div>
     <div style="font-size:13px;color:rgba(200,220,255,.7);margin-bottom:8px">Scegli un potenziamento:</div>`;
@@ -4210,9 +4212,16 @@ function showRaceChoice(){
     btn.onmouseleave=()=>btn.style.background='rgba(255,255,255,.05)';
     btn.onclick=()=>{
       overlay.remove();
-      G.paused=false;
       _raceChoiceActive=false;
       try{ p.apply(); }catch(e){}
+      // Scudo rimane per 2 secondi dopo la scelta poi sparisce
+      setTimeout(()=>{
+        if(G&&G._raceChoiceShield){
+          G.shieldActive=false;
+          G._raceChoiceShield=false;
+          showMsg('🛡 Scudo esaurito','#44aaff');
+        }
+      }, 2000);
     };
     overlay.appendChild(btn);
   });
@@ -7102,6 +7111,7 @@ async function endGame(){
   window._inGame=false;
   // Reset nuovi sistemi
   _raceMode=false; _raceChoiceActive=false;
+  if(G._raceChoiceShield){ G.shieldActive=false; G._raceChoiceShield=false; }
   document.querySelectorAll('#_raceChoiceOverlay,#_raceHUD,#_objHUD,#_weatherOverlay').forEach(el=>el.remove());
   if(_comboHUD) _comboHUD.style.opacity='0';
   // Frammenti guadagnati
