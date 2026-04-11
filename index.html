@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZIVVE">
-<link rel="manifest" id="pwaManifest">
+<link rel="manifest" id="pwaManifest" href="/zivve/manifest.json">
 <title>ZIVVE — Tu sei l'ultima sfera.</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -1901,7 +1901,19 @@ function saveMockLB(name,score){const lb=JSON.parse(localStorage.getItem('drift_
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 const shareCanvas=document.getElementById('shareCanvas'),sctx=shareCanvas.getContext('2d');
 let W,H,CX,CY,ORBIT_R;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;CX=W/2;CY=H/2;ORBIT_R=Math.min(W,H)*.32;}
+function resize(){
+  const dpr=window.devicePixelRatio||1;
+  const cssW=window.innerWidth, cssH=window.innerHeight;
+  // Canvas interno in pixel fisici per nitidezza su schermi HiDPI
+  canvas.width=Math.round(cssW*dpr);
+  canvas.height=Math.round(cssH*dpr);
+  // CSS size invariata — il canvas si scala visivamente
+  canvas.style.width=cssW+'px';
+  canvas.style.height=cssH+'px';
+  // Scala il context per compensare — tutte le coordinate rimangono in CSS pixels
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  W=cssW; H=cssH; CX=W/2; CY=H/2; ORBIT_R=Math.min(W,H)*.32;
+}
 window.addEventListener('resize',resize);resize();
 
 // ══════════════════════════════════════
@@ -3581,7 +3593,7 @@ _gameCanvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
   e.stopPropagation();
   const now=Date.now();
-  if(now-_lastTapTime<80)return; // throttle 80ms anti-spam — sotto la finestra PD di 133ms
+  if(now-_lastTapTime<50)return; // throttle 50ms — più reattivo su mobile
   _lastTapTime=now;
   if(G&&G.running) reverseDir();
 },{passive:false});
