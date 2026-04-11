@@ -1814,6 +1814,29 @@ function runHeroCanvas(){
 // ══════════════════════════════════════════════════════════════
 const FIREBASE_URL='https://zivve-game-default-rtdb.europe-west1.firebasedatabase.app';
 const USE_LB=true;
+// Testa connessione Firebase all'avvio — avvisa se bloccato
+(async()=>{
+  try{
+    const r=await fetch(FIREBASE_URL+'/scores.json?limitToFirst=1&_='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    window._fbOk=true;
+  }catch(e){
+    window._fbOk=false;
+    console.warn('[FB] Firebase bloccato — probabilmente ad-blocker o Brave Shields attivi. Classifica e inventario non disponibili.');
+    // Mostra avviso una sola volta
+    setTimeout(()=>{
+      const el=document.getElementById('startOverlay');
+      if(el&&!localStorage.getItem('zivve_fb_warn_shown')){
+        localStorage.setItem('zivve_fb_warn_shown','1');
+        const w=document.createElement('div');
+        w.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,100,0,.9);color:#fff;padding:10px 18px;border-radius:8px;font-family:Orbitron,sans-serif;font-size:11px;z-index:9999;text-align:center;max-width:280px';
+        w.innerHTML='⚠️ Classifica non disponibile<br><span style="font-size:9px;opacity:.8">Disattiva ad-blocker o Brave Shields</span>';
+        document.body.appendChild(w);
+        setTimeout(()=>w.remove(),6000);
+      }
+    },2000);
+  }
+})();
 async function fbGet(path){const res=await fetch(FIREBASE_URL+path+'.json?_='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});if(!res.ok)throw new Error('FB GET '+res.status);return res.json();}
 async function fbSet(path,data){const res=await fetch(FIREBASE_URL+path+'.json?_='+Date.now(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!res.ok)throw new Error('FB PUT '+res.status);return res.json();}
 // sbFetch rimossa - usa Firebase
@@ -4471,9 +4494,20 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
   }
 
   // Active powerup countdown
+  // Timer scudo indipendente da activePowerup
+  if(G.shieldActive&&G._shieldTimer!==undefined){
+    G._shieldTimer--;
+    if(G._shieldTimer<=0&&!G._raceChoiceShield){
+      G.shieldActive=false;
+      G._shieldTimer=0;
+      showMsg('🛡 SCUDO ESAURITO','#44aaff');
+      flashScreen('rgba(68,170,255,0.1)');
+      sndPowerupEnd();
+    }
+  }
+  // Timer boost/slow
   if(G.activePowerup){
     if(G.activePowerup.endTime){
-      // Timer basato sul tempo reale
       const remaining=G.activePowerup.endTime-Date.now();
       G.activePowerup.timer=Math.max(0,Math.ceil(remaining/1000*60));
       if(remaining<=0) clearPowerup();
@@ -4669,37 +4703,38 @@ function spawnZigzag(startSide, mainDir, index){
 // ══════════════════════════════════════
 function applyPowerup(key, px, py){
   const DURATION=(getOrbPower()==='rainbow_power'?2:1)*60*60;
-  // Rimuovi eventuale powerup precedente
-  // Se prendo shield, non rimuovere slow/boost attivo
-  if(G.activePowerup&&key!=='shield') clearPowerup();
 
-  if(key==='boost'){
-    const boostSpd=Math.min(BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL+3, (BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL)*1.4);
-    G.activePowerup={key,timer:DURATION,endTime:Date.now()+20000,savedSpeed:BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL};
-    G.speed=boostSpd;
-    showMsg('⚡ SPEED BOOST!','#00ffaa');
-    flashScreen('rgba(0,255,170,0.18)');
-    sndBoost();
-    haptic([15,10,15,10,30]);
-  } else if(key==='slow'){
-    const _siesta=getOrbPower()==='siesta'?3:1;
-    const slowDur=Math.min(5000, 5000*_siesta); // max 5 secondi
-    G.activePowerup={key,timer:5*60,endTime:Date.now()+slowDur,savedSpeed:null};
-    // Non toccare G.speed — usa il flag _slowActive nel loop
-    G._slowActive=true;
-    showMsg('🔮 ULTRA SLOW!','#8833ff');
-    flashScreen('rgba(136,51,255,0.18)');
-    sndSlow();
-    haptic([50,30,80]);
-  } else if(key==='shield'){
-    const SHIELD_DUR=10*60; // 30 secondi
-    G.activePowerup={key,timer:SHIELD_DUR,savedSpeed:null};
+  if(key==='shield'){
+    // Scudo: gestito con timer separato, non usa activePowerup
     G.shieldActive=true;
+    G._shieldTimer=10*60; // 10 secondi
     showMsg('🛡 SCUDO ATTIVO!','#44aaff');
     try{_zPlayShieldSound();}catch(e){}
     flashScreen('rgba(68,170,255,0.22)');
     sndShield();
     haptic([20,10,20,10,60]);
+  } else {
+    // Boost/slow: rimuovi eventuale powerup velocità precedente
+    if(G.activePowerup) clearPowerup();
+
+    if(key==='boost'){
+      const boostSpd=Math.min(BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL+3,(BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL)*1.4);
+      G.activePowerup={key,timer:DURATION,endTime:Date.now()+20000,savedSpeed:BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL};
+      G.speed=boostSpd;
+      showMsg('⚡ SPEED BOOST!','#00ffaa');
+      flashScreen('rgba(0,255,170,0.18)');
+      sndBoost();
+      haptic([15,10,15,10,30]);
+    } else if(key==='slow'){
+      const _siesta=getOrbPower()==='siesta'?3:1;
+      const slowDur=Math.min(5000,5000*_siesta);
+      G.activePowerup={key,timer:5*60,endTime:Date.now()+slowDur,savedSpeed:null};
+      G._slowActive=true;
+      showMsg('🔮 ULTRA SLOW!','#8833ff');
+      flashScreen('rgba(136,51,255,0.18)');
+      sndSlow();
+      haptic([50,30,80]);
+    }
   }
 
   // Particelle colorate
@@ -4715,20 +4750,14 @@ function clearPowerup(){
   if(!G.activePowerup)return;
   const key=G.activePowerup.key;
   if(key==='boost'){
-    G.speed = BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL; // ripristina base
+    G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
   } else if(key==='slow'){
     G._slowActive=false;
     G.slowMo=0;
-    // Dopo slow: piccolo boost temporaneo +20% per 3s
-    const baseSpd=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;
-    G.speed=baseSpd*1.1;
-    setTimeout(()=>{if(G&&G.running&&!G._slowActive&&(!G.activePowerup||G.activePowerup.key!=='boost'))G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL;},3000);
+    G.speed=BASE_SPEED+(G.level-1)*SPEED_PER_LEVEL; // ripristina esatto, nessun boost post-slow
     showMsg('💨 BACK TO SPEED!','#8833ff');
-  } else if(key==='shield'){
-    G.shieldActive=false;
-    showMsg('🛡 SCUDO ESAURITO','#44aaff');
-    flashScreen('rgba(68,170,255,0.1)');
   }
+  // NON tocca shieldActive — lo scudo ha il suo timer separato
   sndPowerupEnd();
   G.activePowerup=null;
 }
@@ -5185,38 +5214,52 @@ function drawOrbPowerHUD(){
   ctx.restore();
 }
 function drawPowerupHUD(){
-  if(!G.activePowerup)return;
-  const pu=G.activePowerup;
-  const secsLeft=pu.endTime?Math.max(0,Math.ceil((pu.endTime-Date.now())/1000)):Math.ceil(pu.timer/60);
-  const fullSecs=pu.key==='shield'?10:pu.key==='boost'?20:15;
-  const FULL_DUR=fullSecs*60;
-  const ratio=pu.timer/FULL_DUR;
-  const col=pu.key==='boost'?'#00ffaa':pu.key==='shield'?'#44aaff':'#aa66ff';
-  const label=pu.key==='boost'?'⚡ BOOST':pu.key==='shield'?'🛡 SCUDO':'🔮 SLOW';
+  const bx=CX, bw=Math.min(200,W*.55), bh=4;
+  let yOffset=0;
 
-  // Bar position: just below survival bar
-  const bx=CX,by=H-88,bw=Math.min(200,W*.55),bh=4;
-  ctx.save();
+  // Barra scudo (timer separato)
+  if(G.shieldActive&&G._shieldTimer>0){
+    const by=H-88+yOffset;
+    const ratio=G._shieldTimer/(10*60);
+    const col='#44aaff';
+    const secsLeft=Math.ceil(G._shieldTimer/60);
+    ctx.save();
+    const pulse=.6+.4*Math.sin(Date.now()*.006);
+    ctx.shadowBlur=10*pulse; ctx.shadowColor=col;
+    ctx.globalAlpha=.25; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.roundRect(bx-bw/2,by,bw,bh,2); ctx.fill();
+    ctx.globalAlpha=.9; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.roundRect(bx-bw/2,by,bw*ratio,bh,2); ctx.fill();
+    ctx.globalAlpha=.9; ctx.shadowBlur=8; ctx.fillStyle=col;
+    ctx.font='bold 11px Orbitron,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('🛡 SCUDO  '+secsLeft+'s', bx, by-5);
+    ctx.restore();
+    yOffset-=22;
+  }
 
-  // Pulsing glow
-  const pulse=.6+.4*Math.sin(Date.now()*.006);
-  ctx.shadowBlur=10*pulse;ctx.shadowColor=col;
-
-  // Background bar
-  ctx.globalAlpha=.25;ctx.fillStyle=col;
-  ctx.beginPath();ctx.roundRect(bx-bw/2,by,bw,bh,2);ctx.fill();
-
-  // Fill bar
-  ctx.globalAlpha=.9;ctx.fillStyle=col;
-  ctx.beginPath();ctx.roundRect(bx-bw/2,by,bw*ratio,bh,2);ctx.fill();
-
-  // Label + seconds
-  ctx.globalAlpha=.9;ctx.shadowBlur=8;ctx.fillStyle=col;
-  ctx.font=`700 11px Rajdhani, sans-serif`;ctx.textAlign='center';ctx.letterSpacing='2px';
-  ctx.fillText(`${label}  ${secsLeft}s`,bx,by-5);
-
-  ctx.restore();
+  // Barra boost/slow
+  if(G.activePowerup){
+    const pu=G.activePowerup;
+    const by=H-88+yOffset;
+    const secsLeft=pu.endTime?Math.max(0,Math.ceil((pu.endTime-Date.now())/1000)):Math.ceil(pu.timer/60);
+    const FULL_DUR=(pu.key==='boost'?20:5)*60;
+    const ratio=pu.timer/FULL_DUR;
+    const col=pu.key==='boost'?'#00ffaa':'#aa66ff';
+    const label=pu.key==='boost'?'⚡ BOOST':'🔮 SLOW';
+    ctx.save();
+    const pulse=.6+.4*Math.sin(Date.now()*.006);
+    ctx.shadowBlur=10*pulse; ctx.shadowColor=col;
+    ctx.globalAlpha=.25; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.roundRect(bx-bw/2,by,bw,bh,2); ctx.fill();
+    ctx.globalAlpha=.9; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.roundRect(bx-bw/2,by,bw*Math.max(0,Math.min(1,ratio)),bh,2); ctx.fill();
+    ctx.globalAlpha=.9; ctx.shadowBlur=8; ctx.fillStyle=col;
+    ctx.font='bold 11px Orbitron,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(label+'  '+secsLeft+'s', bx, by-5);
+    ctx.restore();
+  }
 }
+
 
 // ══════════════════════════════════════
 //  MENU BG DRAW (solo sfondo, no sfere)
