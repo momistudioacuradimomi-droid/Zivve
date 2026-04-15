@@ -369,7 +369,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 </div>
 <div id="flash"></div>
 
-<!-- UI in-game -->
+<!-- OVERLAY STAGIONI -->
+<div id="seasonOverlay" style="display:none;position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:250;overflow-y:auto">
+  <div id="seasonContent" style="padding:24px 20px;font-family:Syncopate,sans-serif;max-width:360px;margin:0 auto"></div>
+</div>
 <div id="ui">
   <div id="comboHUD" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;z-index:12;opacity:0;transition:opacity .3s"></div>
   <div id="levelWrap"><div id="levelLbl" data-i18n="level">Level</div><div id="levelVal">1</div></div>
@@ -412,50 +415,36 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <button class="btn-outline" onclick="saveName('ZIVVER')" style="margin-top:6px;font-size:10px">Salta — gioca come ZIVVER</button>
 </div>
 
-<!-- ONBOARDING -->
-<div id="onboardingOverlay" style="display:none;position:fixed;inset:0;z-index:100;background:#03030a;flex-direction:column;align-items:center;justify-content:center;padding:30px">
-  <div style="width:100%;max-width:340px">
-    <!-- Step 1 -->
-    <div id="ob1" style="display:flex;flex-direction:column;align-items:center;gap:16px">
-      <div style="font-size:72px">☝️</div>
-      <div style="font-family:'Syncopate',sans-serif;font-size:22px;font-weight:900;color:var(--accent);text-align:center">TOCCA PER GIOCARE</div>
-      <div style="font-size:14px;color:rgba(200,220,255,.7);text-align:center;line-height:1.7;max-width:260px">La tua sfera orbita automaticamente.<br>Tocca lo schermo per <strong style="color:var(--white)">invertire la direzione</strong>.</div>
-      <canvas id="obCanvas1" width="200" height="200" style="border-radius:50%;margin:8px auto;display:block"></canvas>
-      <button class="btn-play" onclick="showOnboardStep(2)" style="min-width:200px">Capito! →</button>
+<!-- ONBOARDING INTERATTIVO -->
+<div id="onboardingOverlay" style="display:none;position:fixed;inset:0;z-index:400;background:#03030a;flex-direction:column;align-items:center;justify-content:flex-start;padding:0">
+  <!-- Canvas interattivo -->
+  <canvas id="obGameCanvas" style="position:absolute;inset:0;width:100%;height:100%;touch-action:none"></canvas>
+  <!-- Dot indicatori in alto -->
+  <div style="position:relative;z-index:2;display:flex;gap:8px;justify-content:center;margin-top:24px;pointer-events:none">
+    <div id="obDot1" style="width:8px;height:8px;border-radius:50%;background:var(--accent);transition:all .3s"></div>
+    <div id="obDot2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s"></div>
+    <div id="obDot3" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s"></div>
+  </div>
+  <!-- Card istruzione in basso -->
+  <div style="position:absolute;bottom:0;left:0;right:0;z-index:2;padding:20px 24px 40px;background:linear-gradient(0deg,rgba(3,3,10,.98) 70%,transparent)">
+    <div id="ob1" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-family:'Syncopate',sans-serif;font-size:16px;font-weight:900;color:var(--accent);text-align:center;letter-spacing:.08em">TOCCA PER INVERTIRE</div>
+      <div style="font-size:12px;color:rgba(200,220,255,.65);text-align:center;line-height:1.6;max-width:280px">La tua sfera orbita al centro. Tocca per <strong style="color:#fff">invertire la direzione</strong>.</div>
+      <div id="obProgress1" style="font-size:11px;color:rgba(74,240,208,.7);letter-spacing:.15em;margin-top:4px">TOCCA 3 VOLTE — <span id="obCount">0</span>/3</div>
     </div>
-    <!-- Step 2 -->
-    <div id="ob2" style="display:none;flex-direction:column;align-items:center;gap:16px">
-      <div style="font-size:72px">🔴</div>
-      <div style="font-family:'Syncopate',sans-serif;font-size:22px;font-weight:900;color:var(--red);text-align:center">SCHIVA LE SFERE</div>
-      <div style="font-size:14px;color:rgba(200,220,255,.7);text-align:center;line-height:1.7;max-width:260px">Le sfere rosse ti inseguono.<br>Ogni colpo = <strong style="color:var(--red)">-1 vita</strong>.<br>Hai 3 vite. Sopravvivi il più a lungo possibile.</div>
-      <div style="display:flex;gap:16px;align-items:center;justify-content:center;margin:8px 0">
-        <div style="text-align:center"><div style="font-size:32px">❤️</div><div style="font-size:9px;color:var(--dim)">3 vite</div></div>
-        <div style="font-size:24px;color:var(--dim)">→</div>
-        <div style="text-align:center"><div style="font-size:32px">💀</div><div style="font-size:9px;color:var(--dim)">game over</div></div>
-      </div>
-      <button class="btn-play" onclick="showOnboardStep(3)" style="min-width:200px">Capito! →</button>
+    <div id="ob2" style="display:none;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-family:'Syncopate',sans-serif;font-size:16px;font-weight:900;color:var(--red);text-align:center;letter-spacing:.08em">SCHIVA LA SFERA ROSSA</div>
+      <div style="font-size:12px;color:rgba(200,220,255,.65);text-align:center;line-height:1.6;max-width:280px">Una sfera rossa si avvicina. Inverti la direzione per <strong style="color:var(--red)">evitarla</strong>.</div>
+      <div id="obProgress2" style="font-size:11px;color:rgba(255,80,80,.6);letter-spacing:.15em;margin-top:4px">ASPETTA LA SFERA...</div>
     </div>
-    <!-- Step 3 -->
-    <div id="ob3" style="display:none;flex-direction:column;align-items:center;gap:16px">
-      <div style="font-size:72px">⚡</div>
-      <div style="font-family:'Syncopate',sans-serif;font-size:22px;font-weight:900;color:var(--gold);text-align:center">RACCOLTA POWER-UP</div>
-      <div style="font-size:14px;color:rgba(200,220,255,.7);text-align:center;line-height:1.7;max-width:260px">Le sfere colorate sono <strong style="color:var(--gold)">power-up</strong>.<br>
-        <span style="color:#00ffaa">⚡ Verde</span> = velocità doppia<br>
-        <span style="color:#8833ff">🔮 Viola</span> = ultra slow-mo<br>
-        <span style="color:#44aaff">🛡 Blu</span> = scudo 10 secondi</div>
-      <div style="margin-top:4px;padding:10px 16px;background:rgba(74,240,208,.08);border:1px solid rgba(74,240,208,.2);border-radius:8px;text-align:center;max-width:280px">
-        <div style="font-size:11px;color:var(--accent);letter-spacing:.08em">💡 PRO TIP</div>
-        <div style="font-size:12px;color:rgba(200,220,255,.7);margin-top:4px">Inverti direzione appena prima di essere colpito → <strong style="color:var(--gold)">PERFECT DODGE!</strong></div>
-      </div>
-      <button class="btn-play" onclick="finishOnboarding()" style="min-width:200px;background:linear-gradient(135deg,var(--gold),#ff8800);color:#000">▶ INIZIA A GIOCARE!</button>
-    </div>
-    <!-- Dots indicatori step -->
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
-      <div id="obDot1" style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
-      <div id="obDot2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
-      <div id="obDot3" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)"></div>
+    <div id="ob3" style="display:none;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-family:'Syncopate',sans-serif;font-size:16px;font-weight:900;color:var(--gold);text-align:center;letter-spacing:.08em">SEI PRONTO!</div>
+      <div style="font-size:12px;color:rgba(200,220,255,.65);text-align:center;line-height:1.6;max-width:280px">Hai capito come funziona ZIVVE. Inverti appena prima dell'impatto per un <strong style="color:#ffd700">Perfect Dodge</strong> e bonus punti.</div>
+      <button onclick="finishOnboarding()" class="btn-play" style="min-width:200px;margin-top:10px">▶ INIZIA A GIOCARE!</button>
     </div>
   </div>
+  <!-- Salta -->
+  <button onclick="finishOnboarding()" style="position:absolute;top:16px;right:16px;z-index:3;background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.4);padding:6px 14px;border-radius:4px;font-family:'Syncopate',sans-serif;font-size:9px;letter-spacing:.2em;cursor:pointer">SALTA</button>
 </div>
 
 <!-- START -->
@@ -499,6 +488,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <button onclick="startLVS();closeGiocaMenu()" style="width:100%;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.06);color:#ff8888;font-family:'Syncopate',sans-serif;font-size:12px;letter-spacing:.15em;padding:13px 16px;cursor:pointer;text-align:left;transition:background .15s" onmouseenter="this.style.background='rgba(255,136,136,.07)'" onmouseleave="this.style.background='none'">👑 Inizia la Serie &nbsp;<span id="lvsCountdown" style="font-size:9px;opacity:.6"></span></button>
       <button onclick="shareChallengeLink();closeGiocaMenu()" style="width:100%;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.06);color:#ffe566;font-family:'Syncopate',sans-serif;font-size:12px;letter-spacing:.15em;padding:13px 16px;cursor:pointer;text-align:left;transition:background .15s" onmouseenter="this.style.background='rgba(255,229,102,.07)'" onmouseleave="this.style.background='none'">⚔️ Sfida un Amico</button>
       <button onclick="showTourneyScreen();closeGiocaMenu()" style="width:100%;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.06);color:#ffd700;font-family:'Syncopate',sans-serif;font-size:12px;letter-spacing:.15em;padding:13px 16px;cursor:pointer;text-align:left;transition:background .15s" onmouseenter="this.style.background='rgba(255,215,0,.07)'" onmouseleave="this.style.background='none'">🏆 The King Say</button>
+      <button onclick="showWeeklyTournament();closeGiocaMenu()" style="width:100%;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.06);color:#ff4488;font-family:'Syncopate',sans-serif;font-size:12px;letter-spacing:.15em;padding:13px 16px;cursor:pointer;text-align:left;transition:background .15s" onmouseenter="this.style.background='rgba(255,68,136,.07)'" onmouseleave="this.style.background='none'">⚔️ Torneo Settimanale</button>
       <button onclick="showReplay();closeGiocaMenu()" style="width:100%;background:none;border:none;color:rgba(200,220,255,.6);font-family:'Syncopate',sans-serif;font-size:12px;letter-spacing:.15em;padding:13px 16px;cursor:pointer;text-align:left;transition:background .15s" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background='none'">▶ Replay</button>
     </div>
   </div>
@@ -2565,6 +2555,13 @@ function showStatsScreen(){
   `;
   document.body.appendChild(div);
 }
+function pauseGame(){
+  if(!G||!G.running) return;
+  G.paused=true; G.running=false;
+  show('pauseOverlay');
+  try{sndPause();}catch(e){}
+  try{haptic(20);}catch(e){}
+}
 function resumeGame(){
   hide('pauseOverlay');hide('stopOverlay');
   G.paused=false;G.running=true;
@@ -3171,7 +3168,8 @@ function getScoreMultiplier(){
 // ══════════════════════════════════════
 function spawnBoss(){
   G.bossActive=true;
-  G.bossTimer=30*60; // 30 secondi a 60fps
+  G.bossTimer=30*60; // 30 secondi totali a 60fps
+  G.bossPhase=1; // Fase 1: 30→20s
   G.bossLevel=G.level;
   // Rimuovi tutti i nemici normali
   G.enemies=G.enemies.filter(e=>e.type.isPowerup);
@@ -3187,11 +3185,9 @@ function spawnBoss(){
     life:0,pulsePhase:0,driftX:0,driftY:0,
     type:bossType,_isBoss:true
   });
-  // Mostra messaggio
-  showMsg('👾 MINI BOSS! Sopravvivi 30s!','#cc00cc');
+  showMsg('👾 BOSS — FASE 1','#cc00cc');
   flashScreen('rgba(200,0,200,.25)');
   haptic([100,50,100,50,200]);
-  // Blocca spawn normali
   G.spawnTimer=-9999;
   try{_zBossMode(true);}catch(e){}
 }
@@ -3199,46 +3195,83 @@ function spawnBoss(){
 function updateBoss(){
   if(!G.bossActive) return;
   G.bossTimer--;
-  // Boss insegue il giocatore
+  const secsLeft=Math.ceil(G.bossTimer/60);
+
+  // ── Transizioni di fase ──
+  if(secsLeft<=20&&secsLeft>10&&G.bossPhase===1){
+    G.bossPhase=2;
+    showMsg('🔥 FASE 2 — Velocità aumentata!','#ff8800');
+    flashScreen('rgba(255,136,0,.3)');
+    haptic([80,40,80]);
+  }
+  if(secsLeft<=10&&G.bossPhase===2){
+    G.bossPhase=3;
+    showMsg('💀 FASE 3 — FRENESIA!','#ff2244');
+    flashScreen('rgba(255,34,68,.4)');
+    haptic([200,50,200,50,200]);
+  }
+
+  // ── Comportamento boss per fase ──
   const boss=G.enemies.find(e=>e._isBoss);
   if(boss){
     const px=CX+Math.cos(G.angle)*ORBIT_R;
     const py=CY+Math.sin(G.angle)*ORBIT_R;
     const dx=px-boss.x, dy=py-boss.y;
     const dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
-    const speed=1.2; // velocità inseguimento
+
+    // Velocità inseguimento aumenta per fase
+    const speed=G.bossPhase===3?2.5:G.bossPhase===2?1.8:1.2;
     boss.vx=boss.vx*0.85+(dx/dist)*speed*0.15;
     boss.vy=boss.vy*0.85+(dy/dist)*speed*0.15;
+
+    // Fase 3: cambio direzione improvviso ogni 0.5s
+    if(G.bossPhase===3&&G.bossTimer%30===0){
+      const randAngle=Math.random()*Math.PI*2;
+      boss.vx+=Math.cos(randAngle)*1.5;
+      boss.vy+=Math.sin(randAngle)*1.5;
+    }
+
+    // Colore boss per fase
+    const bossColors=['#bb00bb','#ff8800','#ff2244'];
+    boss.type={...boss.type,
+      color0:bossColors[G.bossPhase-1],
+      color1:bossColors[G.bossPhase-1],
+      haloCols:['rgba(255,34,68,.5)','rgba(255,34,68,.2)','rgba(0,0,0,0)']
+    };
   }
-  // Aggiorna HUD timer boss
-  const secsLeft=Math.ceil(G.bossTimer/60);
+
+  // HUD timer
   if(G.bossTimer%60===0&&secsLeft>0&&secsLeft<=10){
-    showMsg('👾 '+secsLeft+'s...','#cc00cc');
+    showMsg('💀 '+secsLeft+'s...','#ff2244');
   }
-  // Boss sputa palline ogni 3 secondi
-  if(G.bossTimer%180===0&&G.bossActive){
-    const boss=G.enemies.find(e=>e._isBoss);
-    if(boss){
-      // Sputa 2-3 palline in direzioni casuali
-      const count=2+Math.floor(Math.random()*2);
+
+  // ── Proiettili per fase ──
+  const fireRate=G.bossPhase===3?60:G.bossPhase===2?120:180; // Fase3=1/s, Fase2=0.5/s, Fase1=ogni 3s
+  if(G.bossTimer%fireRate===0&&G.bossActive){
+    const b=G.enemies.find(e=>e._isBoss);
+    if(b){
+      const count=G.bossPhase===3?8:G.bossPhase===2?5:3;
       for(let i=0;i<count;i++){
-        const angle=Math.random()*Math.PI*2;
-        const spd=1.2+Math.random()*1.0;
+        const ang=G.bossPhase===3
+          ?(Math.PI*2/count)*i // cerchio per fase 3
+          :(G.bossPhase===2?Math.random()*Math.PI*2:(Math.atan2(CY+Math.sin(G.angle)*ORBIT_R-b.y,CX+Math.cos(G.angle)*ORBIT_R-b.x)+(i-1)*0.4));
+        const spd=G.bossPhase===3?1.8:G.bossPhase===2?2.2:1.5;
+        const shotColor=G.bossPhase===3?'#ff2244':G.bossPhase===2?'#ff8800':'#cc00cc';
         G.enemies.push({
-          x:boss.x,y:boss.y,
-          vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,
+          x:b.x,y:b.y,
+          vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
           life:0,pulsePhase:Math.random()*Math.PI*2,
-          driftX:(Math.random()-.5)*.08,driftY:(Math.random()-.5)*.08,
-          type:{key:'normal',rMult:.04,spdMult:1.0,
-            color0:'#ffaaff',color1:'#cc00cc',color2:'#550033',
-            haloCols:['rgba(200,0,200,.5)','rgba(150,0,150,.2)','rgba(0,0,0,0)'],
-            haloR:4,isBossShot:true},
+          driftX:(Math.random()-.5)*.06,driftY:(Math.random()-.5)*.06,
+          type:{key:'normal',rMult:.035,spdMult:1.0,
+            color0:shotColor,color1:shotColor,color2:'#110000',
+            haloCols:['rgba(255,34,68,.4)','rgba(200,0,0,.15)','rgba(0,0,0,0)'],
+            haloR:3.5,isBossShot:true},
           _isBossShot:true
         });
       }
-      showMsg('👾 ATTACCO!','#cc00cc');
     }
   }
+
   if(G.bossTimer<=0) bossCleared();
 }
 
@@ -3270,17 +3303,21 @@ function drawBossHUD(){
   const bw=Math.min(220,W*.6),bh=6;
   const bx=CX-bw/2,by=H-70;
   ctx.save();
-  ctx.globalAlpha=.3;ctx.fillStyle='#cc00cc';
+  ctx.globalAlpha=.3;
+  const bossColor=G.bossPhase===3?'#ff2244':G.bossPhase===2?'#ff8800':'#cc00cc';
+  ctx.fillStyle=bossColor;
   ctx.beginPath();ctx.roundRect(bx,by,bw,bh,3);ctx.fill();
   ctx.globalAlpha=.9;
   const grad=ctx.createLinearGradient(bx,0,bx+bw,0);
-  grad.addColorStop(0,'#ff44ff');grad.addColorStop(1,'#cc00cc');
+  const gradColor=G.bossPhase===3?'#ff6677':G.bossPhase===2?'#ffaa44':'#ff44ff';
+  grad.addColorStop(0,gradColor);grad.addColorStop(1,bossColor);
   ctx.fillStyle=grad;
   ctx.beginPath();ctx.roundRect(bx,by,bw*ratio,bh,3);ctx.fill();
-  ctx.globalAlpha=1;ctx.fillStyle='#ff88ff';
+  ctx.globalAlpha=1;ctx.fillStyle=gradColor;
   ctx.font='bold 11px Orbitron,sans-serif';
   ctx.textAlign='center';
-  ctx.fillText('👾 BOSS — '+secsLeft+'s',CX,by-6);
+  const phaseLabel=G.bossPhase===3?'💀 FRENESIA':G.bossPhase===2?'🔥 FASE 2':'👾 BOSS';
+  ctx.fillText(phaseLabel+' — '+secsLeft+'s',CX,by-6);
   ctx.restore();
 }
 
@@ -3507,7 +3544,7 @@ function startRaceModeGame(){
   showMsg('🏁 MODALITÀ CORSA — Scegli un bonus ogni 30s!','#4af0d0');
 }
 
-function showStart(){updateXPBar();try{getKingRivalryText();}catch(e){}
+function showStart(){updateXPBar();try{if(window.updateDailyGoalWidget)updateDailyGoalWidget();}catch(e){} try{getKingRivalryText();}catch(e){}
   // Aggiorna counter frammenti
   const _fc=document.getElementById('fragsMenuCount');
   if(_fc){ const f=getFragments(); _fc.textContent=f>0?'💎'+f:''; }
@@ -7417,6 +7454,8 @@ async function endGame(){
       show('overOverlay');
       setTimeout(()=>loadLB(),800);
       applyLang();
+      // Replay automatico dopo 2.5s — solo se c'è video disponibile
+      setTimeout(()=>startAutoReplay(),2500);
     },1600);
     if(!playerName)setTimeout(()=>checkName(()=>{}),600);
   }
@@ -10005,21 +10044,200 @@ function toggleSecondaryMenu(){
 
 function startOnboarding(){
   hideAll();
-  const ov=document.getElementById('onboardingOverlay');
-  if(ov){ ov.style.display='flex'; ov.style.flexDirection='column'; drawOnboardCanvas(); }
+  const ov = document.getElementById('onboardingOverlay');
+  if(!ov) return;
+  ov.style.display = 'flex';
+  ov.style.flexDirection = 'column';
+  _obStep = 1;
+  _obTapCount = 0;
+  _obEnemyDodged = false;
+  showOnboardStep(1);
+  _obRunCanvas();
 }
 
+let _obStep = 1;
+let _obTapCount = 0;
+let _obEnemyDodged = false;
+let _obAng = 0;
+let _obDir = 1;
+let _obEnemy = null;
+let _obRAF = null;
+let _obEnemySpawned = false;
+let _obEnemyClose = false;
+
+function _obRunCanvas(){
+  const cv = document.getElementById('obGameCanvas');
+  if(!cv) return;
+  const W2 = window.innerWidth, H2 = window.innerHeight;
+  cv.width = W2; cv.height = H2;
+  const ctx = cv.getContext('2d');
+  const CX2 = W2/2, CY2 = H2/2;
+  const R = Math.min(W2,H2) * 0.32;
+
+  // Tap handler
+  function onTap(e){
+    e.preventDefault();
+    if(_obStep === 1){
+      _obDir *= -1;
+      _obTapCount++;
+      const cnt = document.getElementById('obCount');
+      if(cnt) cnt.textContent = _obTapCount;
+      // Flash feedback
+      _obFlash = 8;
+      if(_obTapCount >= 3){
+        setTimeout(()=>{ _obStep=2; showOnboardStep(2); _obEnemySpawned=false; _obEnemy=null; }, 600);
+      }
+    } else if(_obStep === 2){
+      _obDir *= -1;
+    } else if(_obStep === 3){
+      _obDir *= -1;
+    }
+  }
+  cv.addEventListener('pointerdown', onTap, {passive:false});
+
+  let _obFlash = 0;
+
+  function frame(){
+    const ov = document.getElementById('onboardingOverlay');
+    if(!ov || ov.style.display === 'none'){ cancelAnimationFrame(_obRAF); return; }
+
+    ctx.fillStyle = '#03030a';
+    ctx.fillRect(0, 0, W2, H2);
+
+    // Stelle di sfondo
+    if(!_obStars){
+      _obStars = Array.from({length:60}, ()=>({
+        x:Math.random()*W2, y:Math.random()*H2,
+        r:Math.random()*1.2+.2, a:Math.random()
+      }));
+    }
+    _obStars.forEach(s=>{
+      ctx.globalAlpha = s.a * 0.6;
+      ctx.fillStyle = '#4af0d0';
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Orbita
+    ctx.strokeStyle = 'rgba(74,240,208,.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6,8]);
+    ctx.beginPath(); ctx.arc(CX2,CY2,R,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Centro
+    const cg = ctx.createRadialGradient(CX2,CY2,0,CX2,CY2,16);
+    cg.addColorStop(0,'rgba(74,240,208,.4)'); cg.addColorStop(1,'rgba(74,240,208,0)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(CX2,CY2,16,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(200,240,255,.8)'; ctx.beginPath(); ctx.arc(CX2,CY2,3,0,Math.PI*2); ctx.fill();
+
+    // Aggiorna angolo sfera
+    _obAng += 0.025 * _obDir;
+
+    // Sfera giocatore
+    const px = CX2 + Math.cos(_obAng)*R;
+    const py = CY2 + Math.sin(_obAng)*R;
+
+    // Glow sfera
+    const ag = ctx.createRadialGradient(px,py,0,px,py,18);
+    if(_obFlash > 0){
+      ag.addColorStop(0,'#fff'); ag.addColorStop(1,'rgba(74,240,208,0)');
+      _obFlash--;
+    } else {
+      ag.addColorStop(0,'#e8f4ff'); ag.addColorStop(0.5,'#4af0d0'); ag.addColorStop(1,'rgba(74,240,208,0)');
+    }
+    ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(px,py,18,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#4af0d0'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(px-3,py-3,3,0,Math.PI*2); ctx.fill();
+
+    // Step 2: spawna un nemico che insegue lentamente
+    if(_obStep === 2){
+      if(!_obEnemySpawned){
+        _obEnemySpawned = true;
+        const a = _obAng + Math.PI;
+        _obEnemy = {x: CX2+Math.cos(a)*R*1.3, y: CY2+Math.sin(a)*R*1.3, vx:0, vy:0};
+        setTimeout(()=>{
+          const prog2 = document.getElementById('obProgress2');
+          if(prog2) prog2.textContent = 'INVERTI DIREZIONE!';
+        }, 2000);
+      }
+      if(_obEnemy){
+        const edx = px - _obEnemy.x, edy = py - _obEnemy.y;
+        const edist = Math.sqrt(edx*edx+edy*edy);
+        _obEnemy.vx = _obEnemy.vx*0.9 + (edx/edist)*0.5*0.1;
+        _obEnemy.vy = _obEnemy.vy*0.9 + (edy/edist)*0.5*0.1;
+        _obEnemy.x += _obEnemy.vx;
+        _obEnemy.y += _obEnemy.vy;
+
+        // Disegna nemico
+        const eg = ctx.createRadialGradient(_obEnemy.x,_obEnemy.y,0,_obEnemy.x,_obEnemy.y,14);
+        eg.addColorStop(0,'#ff6677'); eg.addColorStop(1,'rgba(255,34,68,0)');
+        ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(_obEnemy.x,_obEnemy.y,14,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ff2244'; ctx.beginPath(); ctx.arc(_obEnemy.x,_obEnemy.y,7,0,Math.PI*2); ctx.fill();
+
+        // Controlla schivata (nemico era vicino ma ora si allontana)
+        if(edist < R*0.35) _obEnemyClose = true;
+        if(_obEnemyClose && edist > R*0.5 && !_obEnemyDodged){
+          _obEnemyDodged = true;
+          // Flash verde + messaggio
+          ctx.fillStyle = 'rgba(74,240,208,.3)';
+          ctx.fillRect(0,0,W2,H2);
+          setTimeout(()=>{ _obStep=3; showOnboardStep(3); _obEnemy=null; },800);
+        }
+        // Se colpito: respawn nemico dall'altro lato
+        if(edist < 16){
+          const a2 = _obAng + Math.PI + (Math.random()-.5)*0.5;
+          _obEnemy = {x:CX2+Math.cos(a2)*R*1.4, y:CY2+Math.sin(a2)*R*1.4, vx:0, vy:0};
+          _obEnemyClose = false;
+        }
+      }
+    }
+
+    // Step 3: mostra un nemico veloce e aspetta near miss
+    if(_obStep === 3 && !_obEnemy){
+      const a3 = _obAng + Math.PI + (Math.random()-.5)*0.3;
+      _obEnemy = {x:CX2+Math.cos(a3)*R*1.3, y:CY2+Math.sin(a3)*R*1.3, vx:0, vy:0, fast:true};
+    }
+    if(_obStep === 3 && _obEnemy){
+      const edx = px-_obEnemy.x, edy = py-_obEnemy.y;
+      const edist = Math.sqrt(edx*edx+edy*edy);
+      const spd = 0.7;
+      _obEnemy.vx = _obEnemy.vx*0.85+(edx/edist)*spd*0.15;
+      _obEnemy.vy = _obEnemy.vy*0.85+(edy/edist)*spd*0.15;
+      _obEnemy.x += _obEnemy.vx;
+      _obEnemy.y += _obEnemy.vy;
+      const eg2 = ctx.createRadialGradient(_obEnemy.x,_obEnemy.y,0,_obEnemy.x,_obEnemy.y,14);
+      eg2.addColorStop(0,'#ff6677'); eg2.addColorStop(1,'rgba(255,34,68,0)');
+      ctx.fillStyle = eg2; ctx.beginPath(); ctx.arc(_obEnemy.x,_obEnemy.y,14,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ff2244'; ctx.beginPath(); ctx.arc(_obEnemy.x,_obEnemy.y,7,0,Math.PI*2); ctx.fill();
+      if(edist < 24){ _obEnemy = null; } // respawn
+    }
+
+    _obRAF = requestAnimationFrame(frame);
+  }
+  _obRAF = requestAnimationFrame(frame);
+}
+
+let _obStars = null;
+
 function showOnboardStep(step){
+  _obStep = step;
   [1,2,3].forEach(i=>{
-    const el=document.getElementById('ob'+i);
-    if(el) el.style.display=i===step?'flex':'none';
-    const dot=document.getElementById('obDot'+i);
-    if(dot){ dot.style.background=i===step?'var(--accent)':'rgba(255,255,255,.2)'; dot.style.transform=i===step?'scale(1.4)':'scale(1)'; }
+    const el = document.getElementById('ob'+i);
+    if(el) el.style.display = i===step?'flex':'none';
+    const dot = document.getElementById('obDot'+i);
+    if(dot){ dot.style.background=i===step?'var(--accent)':'rgba(255,255,255,.2)'; dot.style.transform=i===step?'scale(1.5)':'scale(1)'; }
   });
 }
 
 function finishOnboarding(){
-  const ov=document.getElementById('onboardingOverlay');
+  cancelAnimationFrame(_obRAF);
+  _obStars = null;
+  _obEnemy = null;
+  _obEnemySpawned = false;
+  _obEnemyClose = false;
+  _obEnemyDodged = false;
+  const ov = document.getElementById('onboardingOverlay');
   if(ov){ ov.style.display='none'; ov.classList.add('hidden'); }
   localStorage.setItem('drift_onboarding_done','1');
   hideAll();
@@ -10031,32 +10249,7 @@ function finishOnboarding(){
   }
 }
 
-function drawOnboardCanvas(){
-  const cv=document.getElementById('obCanvas1');
-  if(!cv) return;
-  const ctx=cv.getContext('2d');
-  const CX2=100,CY2=100,R=55;
-  let ang=0,dir2=1;
-  function frame(){
-    if(!document.getElementById('onboardingOverlay')||document.getElementById('onboardingOverlay').style.display==='none') return;
-    ctx.clearRect(0,0,200,200);
-    ctx.fillStyle='#03030a';ctx.fillRect(0,0,200,200);
-    ctx.strokeStyle='rgba(74,240,208,.2)';ctx.lineWidth=1;ctx.setLineDash([4,6]);
-    ctx.beginPath();ctx.arc(CX2,CY2,R,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
-    const cg=ctx.createRadialGradient(CX2,CY2,0,CX2,CY2,14);
-    cg.addColorStop(0,'rgba(74,240,208,.5)');cg.addColorStop(1,'rgba(74,240,208,0)');
-    ctx.fillStyle=cg;ctx.beginPath();ctx.arc(CX2,CY2,14,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='rgba(200,240,255,.9)';ctx.beginPath();ctx.arc(CX2,CY2,3,0,Math.PI*2);ctx.fill();
-    ang+=0.03*dir2;
-    const px=CX2+Math.cos(ang)*R,py=CY2+Math.sin(ang)*R;
-    const ag=ctx.createRadialGradient(px-3,py-3,0,px,py,10);
-    ag.addColorStop(0,'#e8f4ff');ag.addColorStop(1,'#4af0d0');
-    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.fill();
-    requestAnimationFrame(frame);
-  }
-  frame();
-  setInterval(()=>{dir2*=-1;},2000);
-}
+function drawOnboardCanvas(){ /* legacy stub */ }
 
 // ══════════════════════════════════════
 //  INIT
@@ -10153,6 +10346,461 @@ setTimeout(showWeeklyRewardBanner, 1200);
     }
   }
 })();
+
+// ══ NUOVE FUNZIONALITÀ ══
+
+// Replay automatico post-mortem
+function startAutoReplay(){
+  if(!hasFullReplay()) return; // niente video, niente replay automatico
+  // Crea overlay replay automatico sopra il game over
+  const old = document.getElementById('autoReplayOverlay');
+  if(old) old.remove();
+  const div = document.createElement('div');
+  div.id = 'autoReplayOverlay';
+  div.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Syncopate,sans-serif';
+  div.innerHTML = '<div style="font-size:9px;letter-spacing:.4em;color:rgba(200,220,255,.5);margin-bottom:12px;text-transform:uppercase">REPLAY</div>';
+
+  // Video
+  const vid = document.createElement('video');
+  vid.style.cssText = 'width:min(90vw,400px);border-radius:12px;box-shadow:0 0 40px rgba(74,240,208,.2)';
+  vid.autoplay = true;
+  vid.muted = true;
+  vid.playsInline = true;
+
+  // Barra progresso
+  const barWrap = document.createElement('div');
+  barWrap.style.cssText = 'width:min(90vw,400px);height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:8px;overflow:hidden';
+  const barFill = document.createElement('div');
+  barFill.style.cssText = 'height:100%;width:0%;background:linear-gradient(90deg,#4af0d0,#4af0d0);border-radius:2px;transition:width .1s linear';
+  barWrap.appendChild(barFill);
+
+  // Tasto skip
+  const skip = document.createElement('button');
+  skip.style.cssText = 'background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);padding:8px 20px;border-radius:6px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:9px;letter-spacing:.2em;margin-top:14px';
+  skip.textContent = 'SALTA ▶';
+  skip.onclick = function(){ div.remove(); };
+
+  div.appendChild(vid);
+  div.appendChild(barWrap);
+  div.appendChild(skip);
+  document.body.appendChild(div);
+
+  // Carica il video dal blob
+  captureVideoClip().then(function(blob){
+    if(!blob){ div.remove(); return; }
+    const url = URL.createObjectURL(blob);
+    vid.src = url;
+    vid.play();
+
+    // Aggiorna barra progresso
+    const interval = setInterval(function(){
+      if(vid.duration && vid.duration > 0){
+        barFill.style.width = Math.min(100,(vid.currentTime/vid.duration*100)) + '%';
+      }
+    }, 100);
+
+    // Fine video — rimuovi overlay
+    vid.onended = function(){
+      clearInterval(interval);
+      URL.revokeObjectURL(url);
+      div.remove();
+    };
+
+    // Auto-rimuovi dopo 20s massimo
+    setTimeout(function(){
+      clearInterval(interval);
+      URL.revokeObjectURL(url);
+      div.remove();
+    }, 20000);
+  }).catch(function(){
+    div.remove();
+  });
+}
+
+
+// ══ STAGIONI ══
+const SEASON_ORBS = [
+  {month:1,  name:"Ghiaccio Polare",  color:"#a8d8ff", glow:"rgba(168,216,255,.6)", desc:"Sfera invernale — disponibile a Gennaio"},
+  {month:2,  name:"Cuore Cremisi",    color:"#ff6688", glow:"rgba(255,102,136,.6)", desc:"Sfera di San Valentino — disponibile a Febbraio"},
+  {month:3,  name:"Rinascita Verde",  color:"#88dd88", glow:"rgba(136,221,136,.6)", desc:"Sfera primaverile — disponibile a Marzo"},
+  {month:4,  name:"Pioggia d'Oro",    color:"#ffd700", glow:"rgba(255,215,0,.6)",   desc:"Sfera di Aprile — disponibile ad Aprile"},
+  {month:5,  name:"Fiore di Maggio",  color:"#ffaacc", glow:"rgba(255,170,204,.6)", desc:"Sfera primaverile — disponibile a Maggio"},
+  {month:6,  name:"Solstizio",        color:"#ffcc44", glow:"rgba(255,204,68,.6)",  desc:"Sfera estiva — disponibile a Giugno"},
+  {month:7,  name:"Fuoco d'Estate",   color:"#ff6633", glow:"rgba(255,102,51,.6)",  desc:"Sfera estiva — disponibile a Luglio"},
+  {month:8,  name:"Tramonto Blu",     color:"#4488ff", glow:"rgba(68,136,255,.6)",  desc:"Sfera estiva — disponibile ad Agosto"},
+  {month:9,  name:"Foglia d'Ambra",   color:"#cc7722", glow:"rgba(204,119,34,.6)",  desc:"Sfera autunnale — disponibile a Settembre"},
+  {month:10, name:"Lanterna Nera",    color:"#ff4400", glow:"rgba(255,68,0,.6)",    desc:"Sfera di Halloween — disponibile a Ottobre"},
+  {month:11, name:"Nebbia d'Argento", color:"#cccccc", glow:"rgba(200,200,200,.6)", desc:"Sfera autunnale — disponibile a Novembre"},
+  {month:12, name:"Stella Glaciale",  color:"#aaddff", glow:"rgba(170,221,255,.6)", desc:"Sfera natalizia — disponibile a Dicembre"},
+];
+
+function getCurrentSeasonMonth(){ return new Date().getMonth()+1; }
+
+function getCurrentSeasonOrb(){
+  const m = getCurrentSeasonMonth();
+  return SEASON_ORBS.find(o=>o.month===m);
+}
+
+function getSeasonOrbKey(month){ return 'zivve_season_orb_'+month+'_'+new Date().getFullYear(); }
+
+function isSeasonOrbOwned(month){
+  return localStorage.getItem(getSeasonOrbKey(month))==='1';
+}
+
+function grantSeasonOrb(month){
+  localStorage.setItem(getSeasonOrbKey(month),'1');
+}
+
+function showSeasonScreen(){
+  const m = getCurrentSeasonMonth();
+  const orb = getCurrentSeasonOrb();
+  const owned = isSeasonOrbOwned(m);
+  const el = document.getElementById('seasonContent');
+  if(!el){ show('seasonOverlay'); return; }
+
+  const goals = [
+    {id:'sg1', text:'Gioca 5 partite questo mese', target:5,  type:'games_total'},
+    {id:'sg2', text:'Raggiungi il livello 10',      target:10, type:'level_max'},
+    {id:'sg3', text:'Fai 20 near miss totali',      target:20, type:'nearmiss_total'},
+  ];
+
+  const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const monthName = monthNames[m-1];
+
+  const rows = goals.map(function(g,i){
+    const prog = parseInt(localStorage.getItem('zivve_season_prog_'+g.id)||'0');
+    const pct = Math.min(100,Math.round(prog/g.target*100));
+    const done = prog >= g.target;
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba('+
+      (done?'74,240,208':'255,255,255')+','+(done?'.3':'.06')+');border-radius:8px;padding:12px 14px;margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+      +'<span style="font-size:10px;color:rgba(200,220,255,.7)">'+(i+1)+'. '+g.text+'</span>'
+      +'<span style="font-size:10px;color:'+(done?'#4af0d0':'rgba(200,220,255,.4)')+'">'+pct+'%</span>'
+      +'</div>'
+      +'<div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px">'
+      +'<div style="height:100%;width:'+pct+'%;background:'+(done?'#4af0d0':'rgba(74,240,208,.4)')+';border-radius:2px"></div>'
+      +'</div></div>';
+  }).join('');
+
+  const completedAll = goals.every(function(g){
+    return parseInt(localStorage.getItem('zivve_season_prog_'+g.id)||'0') >= g.target;
+  });
+
+  el.innerHTML = 
+    '<div style="font-size:10px;letter-spacing:.4em;color:#4af0d0;margin-bottom:4px;margin-top:4px">STAGIONI</div>'
+    +'<div style="font-size:9px;color:rgba(200,220,255,.4);letter-spacing:.2em;margin-bottom:20px">'+monthName.toUpperCase()+'</div>'
+    +'<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">'
+    +'<div style="width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,'+orb.color+',#003344);box-shadow:0 0 30px '+orb.glow+';margin-bottom:10px"></div>'
+    +'<div style="font-size:13px;color:#fff;letter-spacing:.1em;font-weight:700;margin-bottom:4px">'+orb.name+'</div>'
+    +'<div style="font-size:9px;color:rgba(200,220,255,.4);text-align:center">'+orb.desc+'</div>'
+    +(owned?'<div style="margin-top:8px;font-size:10px;color:#4af0d0;letter-spacing:.15em">✓ SFERA SBLOCCATA</div>':'')
+    +'</div>'
+    +'<div style="font-size:9px;color:rgba(200,220,255,.5);letter-spacing:.2em;margin-bottom:10px">OBIETTIVI DEL MESE</div>'
+    +rows
+    +(completedAll&&!owned?'<button onclick="grantSeasonOrb('+m+');showSeasonScreen()" style="width:100%;padding:12px;background:linear-gradient(135deg,rgba(74,240,208,.2),rgba(74,240,208,.08));border:1px solid rgba(74,240,208,.4);color:#4af0d0;border-radius:10px;font-family:Syncopate,sans-serif;font-size:11px;letter-spacing:.2em;cursor:pointer;margin-top:8px">🎁 RITIRA SFERA</button>':'')
+    +'<button id="seasonCloseBtn" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);border-radius:8px;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em;cursor:pointer;margin-top:12px">← CHIUDI</button>';
+
+  show('seasonOverlay');
+  const scb=document.getElementById('seasonCloseBtn');
+  if(scb) scb.onclick=function(){hide('seasonOverlay');};
+}
+
+// Costanti obiettivi giornalieri
+const DAILY_GOALS = [
+  {id:'score_100',   text:'Segna 100 punti in una partita',    target:100,  reward:5,  type:'score'},
+  {id:'score_500',   text:'Segna 500 punti in una partita',    target:500,  reward:15, type:'score'},
+  {id:'score_1000',  text:'Segna 1000 punti in una partita',   target:1000, reward:30, type:'score'},
+  {id:'survive_30',  text:'Sopravvivi 30 secondi',             target:30,   reward:10, type:'time'},
+  {id:'survive_60',  text:'Sopravvivi 60 secondi',             target:60,   reward:20, type:'time'},
+  {id:'nearmiss_3',  text:'Fai 3 near miss in una partita',    target:3,    reward:10, type:'nearmiss'},
+  {id:'nearmiss_10', text:'Fai 10 near miss in una partita',   target:10,   reward:25, type:'nearmiss'},
+  {id:'pd_1',        text:'Fai 1 Perfect Dodge',               target:1,    reward:15, type:'pd'},
+  {id:'pd_3',        text:'Fai 3 Perfect Dodge in una partita',target:3,    reward:30, type:'pd'},
+  {id:'games_3',     text:'Gioca 3 partite oggi',              target:3,    reward:10, type:'games'},
+  {id:'level_5',     text:'Raggiungi il livello 5',            target:5,    reward:20, type:'level'},
+  {id:'level_10',    text:'Raggiungi il livello 10',           target:10,   reward:40, type:'level'},
+  {id:'games_5',     text:'Gioca 5 partite oggi',              target:5,    reward:15, type:'games'},
+];
+
+const WEEKLY_ENTRY_COST = 30;
+
+const ZIVVE_LORE = {
+  menu: [
+    "Prima della luce, esisteva solo il moto.",
+    "Non sai da dove vieni. Sai solo che orbiti.",
+    "Le sfere rosse non odiano. Esistono per fermarti.",
+    "Ogni inversione è una scelta. Ogni scelta è sopravvivenza.",
+    "Il centro non si muove mai. Tu sì.",
+    "Non c'è spazio. Non c'è tempo. Solo l'orbita.",
+    "Qualcuno ti ha messo qui. Non ti ha detto perché.",
+  ],
+  gameover_low:["L'orbita si è fermata. Non era ancora il momento.","Troppo presto.","Le sfere rosse hanno vinto questa volta."],
+  gameover_mid:["Hai resistito. Non abbastanza.","L'orbita continua anche senza di te. Per ora.","Ogni partita è una memoria."],
+  gameover_high:["Hai visto cose che pochi vedono.","Il centro ha tremato.","Sopravvivere non è la fine."],
+};
+
+function getDailyGoalKey(){ return 'zivve_daily_'+new Date().toDateString(); }
+
+function getTodayGoal(){
+  const key = getDailyGoalKey();
+  const saved = localStorage.getItem(key);
+  if(saved) return JSON.parse(saved);
+  const idx = Math.floor(Date.now()/86400000) % DAILY_GOALS.length;
+  const goal = {id:DAILY_GOALS[idx].id, progress:0, completed:false, rewardClaimed:false};
+  localStorage.setItem(key, JSON.stringify(goal));
+  return goal;
+}
+
+function getDailyGoalDef(id){ return DAILY_GOALS.find(g=>g.id===id)||DAILY_GOALS[0]; }
+
+function updateDailyGoalWidget(){
+  // Non mostriamo widget sulla pagina principale — solo in Statistiche
+}
+
+function updateDailyGoalProgress(type, value){
+  const data = getTodayGoal();
+  if(data.completed) return;
+  const def = getDailyGoalDef(data.id);
+  if(def.type !== type) return;
+  const newProgress = Math.max(data.progress, value);
+  data.progress = newProgress;
+  if(newProgress >= def.target && !data.completed){
+    data.completed = true;
+    showMsg('🎯 OBIETTIVO COMPLETATO! Ritira in Statistiche','#ffd700');
+    flashScreen('rgba(255,215,0,.2)');
+  }
+  localStorage.setItem(getDailyGoalKey(), JSON.stringify(data));
+}
+
+function showDailyGoalDetail(){
+  const data = getTodayGoal();
+  const def = getDailyGoalDef(data.id);
+  const pct = Math.min(100, Math.round(data.progress/def.target*100));
+  const div = document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:260;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;font-family:Syncopate,sans-serif';
+  const canClaim = data.completed && !data.rewardClaimed;
+  div.innerHTML = '<div style="font-size:36px;margin-bottom:12px">🎯</div>'
+    + '<div style="font-size:12px;color:#4af0d0;letter-spacing:.2em;margin-bottom:8px">OBIETTIVO DI OGGI</div>'
+    + '<div style="font-size:12px;color:rgba(200,220,255,.8);text-align:center;margin-bottom:16px;line-height:1.6">' + def.text + '</div>'
+    + '<div style="width:100%;max-width:280px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin-bottom:8px">'
+    + '<div style="height:100%;width:'+pct+'%;background:'+(data.completed?'linear-gradient(90deg,#4af0d0,#ffd700)':'rgba(74,240,208,.5)')+';border-radius:3px"></div></div>'
+    + '<div style="font-size:10px;color:rgba(200,220,255,.5);margin-bottom:20px">' + data.progress + ' / ' + def.target + ' — Premio: 💎'+def.reward+'</div>';
+  if(canClaim){
+    const btn = document.createElement('button');
+    btn.style.cssText='padding:12px 32px;background:linear-gradient(135deg,#4af0d0,#00aacc);color:#000;border:none;border-radius:10px;font-family:Syncopate,sans-serif;font-size:12px;font-weight:700;letter-spacing:.2em;cursor:pointer;margin-bottom:12px';
+    btn.textContent='💎 RITIRA +'+def.reward;
+    btn.onclick=function(){
+      data.rewardClaimed=true;
+      localStorage.setItem(getDailyGoalKey(),JSON.stringify(data));
+      addFragments(def.reward);
+      showMsg('💎 +'+def.reward+' frammenti!','#4af0d0');
+      div.remove();
+    };
+    div.appendChild(btn);
+  } else if(data.rewardClaimed){
+    div.innerHTML += '<div style="color:#4af0d0;font-size:11px">✓ Premio già riscosso</div>';
+  }
+  const close = document.createElement('button');
+  close.style.cssText='background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:9px 24px;border-radius:8px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em;margin-top:8px';
+  close.textContent='← CHIUDI';
+  close.onclick=function(){div.remove();showStatsScreen();};
+  div.appendChild(close);
+  document.body.appendChild(div);
+}
+
+function addFragments(n){
+  const cur = parseInt(localStorage.getItem('drift_fragments')||'0');
+  localStorage.setItem('drift_fragments', cur+n);
+}
+
+function getLoreMenu(){
+  const arr = ZIVVE_LORE.menu;
+  return arr[Math.floor(Date.now()/86400000)%arr.length];
+}
+
+function getLoreGameOver(score, secs){
+  let arr;
+  if(secs<15||score<100) arr=ZIVVE_LORE.gameover_low;
+  else if(secs<60||score<500) arr=ZIVVE_LORE.gameover_mid;
+  else arr=ZIVVE_LORE.gameover_high;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function showLoreMilestone(level){
+  const msgs = {5:"Livello 5. Inizi a capire il ritmo.",10:"Livello 10. Le sfere si adattano.",15:"Livello 15. Non sei piu' quello che ha iniziato.",20:"Livello 20. Il centro ti riconosce.",30:"Livello 30. Sei diventato parte dell'orbita.",50:"Livello 50. Non esistono piu' sfere. Solo movimento."};
+  const msg = msgs[level];
+  if(!msg) return;
+  setTimeout(function(){
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:50;font-family:Syncopate,sans-serif;font-size:10px;color:rgba(200,220,255,.55);letter-spacing:.12em;text-align:center;pointer-events:none;max-width:80vw;font-style:italic;opacity:0;transition:opacity .8s';
+    d.textContent=msg;
+    document.body.appendChild(d);
+    requestAnimationFrame(function(){d.style.opacity='1';});
+    setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove();},1000);},4000);
+  },1500);
+}
+
+function hasEnteredWeeklyTournament(){
+  const week = Math.floor(Date.now()/(7*24*60*60*1000));
+  return localStorage.getItem('zivve_weekly_entered_'+week)==='1';
+}
+
+function enterWeeklyTournament(){
+  const frags = getFragments();
+  if(frags < WEEKLY_ENTRY_COST){
+    showMsg('💎 Frammenti insufficienti! Servono '+WEEKLY_ENTRY_COST,'#ff4488');
+    return false;
+  }
+  const week = Math.floor(Date.now()/(7*24*60*60*1000));
+  localStorage.setItem('zivve_weekly_entered_'+week,'1');
+  const cur = parseInt(localStorage.getItem('drift_fragments')||'0');
+  localStorage.setItem('drift_fragments', Math.max(0,cur-WEEKLY_ENTRY_COST));
+  return true;
+}
+
+function showWeeklyTournament(){
+  const entered = hasEnteredWeeklyTournament();
+  const div = document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:Syncopate,sans-serif';
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToSunday = 7 - dayOfWeek;
+  div.innerHTML = '<div style="font-size:30px;margin-bottom:12px">⚔️</div>'
+    + '<div style="font-size:12px;color:#ff4488;letter-spacing:.25em;margin-bottom:6px">TORNEO SETTIMANALE</div>'
+    + '<div style="font-size:9px;color:rgba(200,220,255,.4);letter-spacing:.15em;margin-bottom:20px">Scade tra '+daysToSunday+' giorni</div>'
+    + '<div style="background:rgba(3,3,18,.9);border:1px solid rgba(255,68,136,.2);border-radius:12px;padding:16px 20px;width:100%;max-width:280px;margin-bottom:16px">'
+    + '<div style="font-size:10px;color:rgba(200,220,255,.6);letter-spacing:.1em;margin-bottom:12px">PREMI</div>'
+    + '<div style="font-size:11px;color:#ffd700;margin-bottom:6px">🥇 1° posto — 500 💎 + Sfera Leggendaria</div>'
+    + '<div style="font-size:11px;color:rgba(200,220,255,.7);margin-bottom:6px">🥈 2° posto — 250 💎</div>'
+    + '<div style="font-size:11px;color:rgba(200,220,255,.7);margin-bottom:6px">🥉 3° posto — 100 💎</div>'
+    + '<div style="font-size:11px;color:rgba(200,220,255,.5)">Top 10 — 50 💎</div></div>';
+  if(!entered){
+    const btn = document.createElement('button');
+    btn.style.cssText='width:100%;max-width:280px;padding:14px;background:linear-gradient(135deg,rgba(255,68,136,.3),rgba(255,68,136,.1));border:1px solid rgba(255,68,136,.4);color:#ff4488;border-radius:12px;font-family:Syncopate,sans-serif;font-size:12px;font-weight:700;letter-spacing:.2em;cursor:pointer;margin-bottom:8px';
+    btn.textContent='PARTECIPA — 💎'+WEEKLY_ENTRY_COST;
+    btn.onclick=function(){
+      if(enterWeeklyTournament()){
+        showMsg('⚔️ Iscritto al torneo!','#ff4488');
+        div.remove();
+        startGame();
+      }
+    };
+    div.appendChild(btn);
+  } else {
+    const statusEl = document.createElement('div');
+    statusEl.style.cssText='width:100%;max-width:280px;padding:12px;background:rgba(255,68,136,.08);border:1px solid rgba(255,68,136,.3);border-radius:10px;text-align:center;color:#ff4488;font-size:11px;letter-spacing:.1em;margin-bottom:8px';
+    statusEl.textContent='✓ GIÀ ISCRITTO QUESTA SETTIMANA';
+    div.appendChild(statusEl);
+    const playBtn = document.createElement('button');
+    playBtn.style.cssText='width:100%;max-width:280px;padding:14px;background:linear-gradient(135deg,rgba(255,68,136,.3),rgba(255,68,136,.1));border:1px solid rgba(255,68,136,.4);color:#ff4488;border-radius:12px;font-family:Syncopate,sans-serif;font-size:12px;letter-spacing:.2em;cursor:pointer;margin-bottom:8px';
+    playBtn.textContent='▶ GIOCA ORA';
+    playBtn.onclick=function(){div.remove();startGame();};
+    div.appendChild(playBtn);
+  }
+  const close = document.createElement('button');
+  close.style.cssText='background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em';
+  close.textContent='← CHIUDI';
+  close.onclick=function(){div.remove();};
+  div.appendChild(close);
+  document.body.appendChild(div);
+}
+
+function toggleNotifPref(key, el){
+  const cur = localStorage.getItem(key)!=='0';
+  const next = !cur;
+  localStorage.setItem(key, next?'1':'0');
+  const knob = el.querySelector('div');
+  el.style.background = next?'rgba(74,240,208,.3)':'rgba(255,255,255,.08)';
+  el.style.borderColor = next?'rgba(74,240,208,.4)':'rgba(74,240,208,.1)';
+  if(knob){ knob.style.background=next?'#4af0d0':'rgba(255,255,255,.3)'; knob.style.right=next?'2px':''; knob.style.left=next?'':'2px'; }
+}
+
+function showNotificationSettings(){
+  const perm = ('Notification' in window)?Notification.permission:'non supportato';
+  const prefs = ['notif_record','notif_weekly','notif_daily','notif_season'];
+  const labels = ['Record personale battuto','Classifica settimanale','Obiettivo giornaliero','Sfera stagionale'];
+  const subs = ['Quando superi il tuo punteggio migliore','Quando qualcuno ti supera','Promemoria alle 20:00','Quando mancano 3 giorni'];
+  const div = document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:250;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:Syncopate,sans-serif';
+  const statusColor = perm==='granted'?'#4af0d0':'rgba(255,80,80,.7)';
+  const statusText = perm==='granted'?'✓ ATTIVO':'✗ INATTIVO';
+  const rows = [];
+  prefs.forEach(function(key,i){
+    const on = localStorage.getItem(key)!=='0';
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText='background:rgba(3,3,18,.85);border:1px solid rgba(74,240,208,.15);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center';
+    const lbl = document.createElement('div');
+    lbl.innerHTML='<div style="font-size:10px;color:#fff;letter-spacing:.06em">'+labels[i]+'</div><div style="font-size:8px;color:rgba(200,220,255,.4);margin-top:2px">'+subs[i]+'</div>';
+    const tog = document.createElement('div');
+    tog.style.cssText='width:36px;height:20px;border-radius:10px;background:'+(on?'rgba(74,240,208,.3)':'rgba(255,255,255,.08)')+';border:1px solid rgba(74,240,208,'+(on?'.4':'.1')+');cursor:pointer;position:relative;transition:all .3s';
+    const knob = document.createElement('div');
+    knob.style.cssText='position:absolute;width:14px;height:14px;background:'+(on?'#4af0d0':'rgba(255,255,255,.3)')+';border-radius:50%;top:2px;'+(on?'right:2px':'left:2px')+';transition:all .3s';
+    tog.appendChild(knob);
+    (function(k,t){ tog.onclick=function(){toggleNotifPref(k,t);}; })(key,tog);
+    rowDiv.appendChild(lbl); rowDiv.appendChild(tog);
+    rows.push(rowDiv);
+  });
+  const wrap2 = document.createElement('div');
+  wrap2.style.cssText='width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px';
+  const hdr2 = document.createElement('div');
+  hdr2.style.cssText='background:rgba(3,3,18,.85);border:1px solid rgba(74,240,208,.2);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center';
+  hdr2.innerHTML='<div><div style="font-size:11px;color:#fff">Stato</div><div style="font-size:9px;color:rgba(200,220,255,.4);margin-top:2px">'+perm+'</div></div><span style="font-size:13px;color:'+statusColor+'">'+statusText+'</span>';
+  const ttl2 = document.createElement('div');
+  ttl2.style.cssText='font-size:10px;letter-spacing:.4em;color:#4af0d0;margin-bottom:20px';
+  ttl2.textContent='NOTIFICHE';
+  wrap2.appendChild(hdr2);
+  rows.forEach(function(r){wrap2.appendChild(r);});
+  div.appendChild(ttl2); div.appendChild(wrap2);
+  const close = document.createElement('button');
+  close.style.cssText='background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.35);padding:10px 24px;border-radius:8px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em;margin-top:20px';
+  close.textContent='← CHIUDI';
+  close.onclick=function(){div.remove();};
+  div.appendChild(close);
+  document.body.appendChild(div);
+}
+
+function showStatsScreen(){
+  const acc=getAccountLevel(),best=parseInt(localStorage.getItem('drift_best')||'0');
+  const games=parseInt(localStorage.getItem('drift_games_played')||'0');
+  const pds=parseInt(localStorage.getItem('drift_perfect_dodges')||'0');
+  const frags=getFragments();
+  const dd=getTodayGoal();
+  const ddef=getDailyGoalDef(dd.id);
+  const dpct=ddef?Math.min(100,Math.round(dd.progress/ddef.target*100)):0;
+  const dc=dd.rewardClaimed?'#4af0d0':dd.completed?'#ffd700':'rgba(200,220,255,.4)';
+  const dt=dd.rewardClaimed?'RISCOSSO':dd.completed?'RITIRA!':dpct+'%';
+  const bpm=window.getBPMonth?getBPMonth():'';
+  const hbp=window.hasBattlePass&&(hasBattlePass()||isTester());
+  const bplv=Math.min(10,Math.floor(parseInt(localStorage.getItem('zivve_games_month_'+bpm)||'0')/3));
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:250;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:24px 20px;font-family:Syncopate,sans-serif';
+  const wrap=document.createElement('div');
+  wrap.style.cssText='width:100%;max-width:320px;display:flex;flex-direction:column;gap:8px';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:11px;letter-spacing:.4em;color:#4af0d0;margin-bottom:12px;margin-top:8px';
+  title.textContent='STATISTICHE';
+  const obj=document.createElement('div');
+  obj.style.cssText='background:rgba(3,3,18,.85);border:1px solid rgba(74,240,208,.2);border-radius:8px;padding:14px 16px;cursor:pointer';
+  obj.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;color:#4af0d0">OBIETTIVO DI OGGI</span><span style="font-size:10px;color:'+dc+'">'+dt+'</span></div><div style="font-size:10px;color:rgba(200,220,255,.65);margin-bottom:6px">'+ddef.text+'</div><div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px"><div style="height:100%;width:'+dpct+'%;background:'+(dd.completed?'linear-gradient(90deg,#4af0d0,#ffd700)':'rgba(74,240,208,.45)')+';border-radius:2px"></div></div>';
+  obj.onclick=function(){div.remove();showDailyGoalDetail();};
+  const bp=document.createElement('div');
+  bp.style.cssText='background:rgba(3,3,18,.85);border:1px solid rgba(255,215,0,'+(hbp?'.35':'.18')+');border-radius:8px;padding:14px 16px;cursor:pointer';
+  bp.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;color:#ffd700">BATTLE PASS '+bpm+'</span><span style="font-size:10px;color:'+(hbp?'#ffd700':'rgba(200,220,255,.4)')+'">LV.'+bplv+'/10</span></div><div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px"><div style="height:100%;width:'+(bplv*10)+'%;background:linear-gradient(90deg,#ffd700,#ff8800);border-radius:2px"></div></div>';
+  bp.onclick=function(){div.remove();if(window.showBattlePassScreen)showBattlePassScreen();};
+  const sdata=[['PUNTEGGIO MIGLIORE',best.toLocaleString('it-IT'),'#fff'],['LIVELLO','LV.'+(acc.lv||1),'#4af0d0'],['FRAMMENTI',frags,'#ffd700'],['PARTITE GIOCATE',games,'#fff'],['PERFECT DODGE',pds,'#ffe566']];
+  const sh=sdata.map(function(r){return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(74,240,208,.12);border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:rgba(200,220,255,.6)">'+r[0]+'</span><span style="font-size:16px;font-weight:900;color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
+  const upg=document.createElement('button');
+  upg.style.cssText='width:100%;padding:12px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);border-radius:8px;color:#ffd700;font-family:Syncopate,sans-serif;font-size:11px;letter-spacing:.2em;cursor:pointer;margin-top:4px';
+  upg.textContent='GESTISCI UPGRADE';upg.onclick=function(){div.remove();showUpgradeScreen();};
+  const clos=document.createElement('button');
+  clos.style.cssText='background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em;margin-top:20px';
+  clos.textContent='CHIUDI';clos.onclick=function(){div.remove();};
+  wrap.appendChild(obj);wrap.appendChild(bp);wrap.innerHTML+=sh;wrap.appendChild(upg);
+  div.appendChild(title);div.appendChild(wrap);div.appendChild(clos);
+  document.body.appendChild(div);
+}
+
+
 </script>
 </body>
 </html>
