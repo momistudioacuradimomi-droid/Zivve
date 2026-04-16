@@ -1885,7 +1885,7 @@ const USE_LB=true;
     window._fbOk=false;
   }
 })();
-async function fbGet(path){const res=await fetch(FIREBASE_URL+path+'.json?_='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});if(!res.ok)throw new Error('FB GET '+res.status);return res.json();}
+async function fbGet(path){const res=await fetch(FIREBASE_URL+path+'.json?_='+Date.now());if(!res.ok)throw new Error('FB GET '+res.status);return res.json();}
 async function fbSet(path,data){const res=await fetch(FIREBASE_URL+path+'.json?_='+Date.now(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!res.ok)throw new Error('FB PUT '+res.status);return res.json();}
 // sbFetch rimossa - usa Firebase
 // ── Sincronizzazione inventario Firebase ──
@@ -3614,6 +3614,7 @@ function showBgThemeScreen(){
   const unlocked=isTester()?BG_THEMES:getUnlockedBgThemes();
   const current=getCurrentBgTheme().id;
   const div=document.createElement('div');
+  div.id='bgThemeOverlay';
   div.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:12px;font-family:Syncopate,sans-serif;overflow-y:auto';
   let html='<div style="font-size:11px;letter-spacing:.3em;color:#4af0d0;margin-bottom:4px">TEMA CAMPO</div>';
   html+='<div style="font-size:9px;color:rgba(200,220,255,.4);margin-bottom:16px;letter-spacing:.15em">Sbloccati con il livello account</div>';
@@ -3625,14 +3626,13 @@ function showBgThemeScreen(){
     const borderCol=isCurrent?'#4af0d0':isBP&&isUnlocked?'rgba(255,215,0,.5)':'rgba(255,255,255,.1)';
     const bgCol=isBP&&isUnlocked?'rgba(255,215,0,.06)':'rgba(255,255,255,.04)';
     const opac=isUnlocked?'1':'.35';
-    const icon=isCurrent?'checkmark':isUnlocked?(isBP?'star':'check'):'lock';
     const iconEmoji=isCurrent?'✓':isUnlocked?(isBP?'⭐':'✅'):'🔒';
     const iconColor=isCurrent?'#4af0d0':isBP&&isUnlocked?'#ffd700':'inherit';
     const subLabel=isBP?(isUnlocked?'Battle Pass':'Battle Pass LV.5'):'LV.'+t.unlockLv+'+';
     const subColor=isBP&&isUnlocked?'#ffd700':'rgba(200,220,255,.4)';
     let onclk;
     if(isUnlocked){
-      onclk="setBgTheme('"+t.id+"');this.closest('[style*=fixed]').remove();showMsg('Tema "+t.name+" attivato!','#4af0d0')";
+      onclk="var _ov=document.getElementById('bgThemeOverlay');if(_ov)_ov.remove();setBgTheme('"+t.id+"');showMsg('Tema "+t.name+" attivato!','#4af0d0')";
     } else if(isBP){
       onclk="showMsg('Sblocca al livello 5 del Battle Pass!','#ffd700')";
     } else {
@@ -3750,9 +3750,9 @@ function reverseDir(){
   if(!G.running)return;
   hideTut();
   const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R;
-  // Perfect Dodge: inversione entro 4 frame da near-miss
+  // Perfect Dodge: inversione entro 18 frame da near-miss (~300ms)
   const lastNM=G._lastNearMissFrame||0;
-  if((G.frameCount-lastNM)<=10&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
+  if((G.frameCount-lastNM)<=18&&lastNM>0){G._lastNearMissFrame=0;triggerPerfectDodge(px,py);return;}
   const _tapDir=G._penaltyInvert>0?1:-1; // invertito se penalità attiva
   G.dir*=_tapDir;if(G.adapt)G.adapt.framesSinceTap=0;
   if(G.orbPower==='tango'&&G.orbPowerData) G.orbPowerData.tangoCount=(G.orbPowerData.tangoCount||0)+1;
@@ -4925,10 +4925,8 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
         // Salva distanza minima dal nemico — usata per calcolare il critico
         if(!G._lastNMDist||d<G._lastNMDist) G._lastNMDist=d;
         if(!G._lastNMHitR2) G._lastNMHitR2=hitR2;
-        // Aggiorna _lastNearMissFrame solo se la finestra PD non è già aperta
-        if(G.frameCount-(G._lastNearMissFrame||0)>10){
-          G._lastNearMissFrame=G.frameCount;
-        }
+        // Aggiorna _lastNearMissFrame ad ogni near miss
+        G._lastNearMissFrame=G.frameCount;
         orbPowerOnNearMiss();
         onFirstNearMiss();
         // ── PARAGON pb_score_chain: bonus +50pt a cascata sui near miss ──
@@ -5316,22 +5314,35 @@ function drawBg(){
   }
   const hue=G.level?(30*(G.level-1))%360:200;
   const sat=G.level?Math.min(60,20+(G.level*3)):20;
+
+  // Usa i colori del tema se non è default
+  let c0,c1,starCol;
+  if(_bgTheme.id==='default'){
+    c0=`hsla(${hue},${sat}%,8%,1)`;
+    c1=`hsla(${(hue+30)%360},${sat*.6}%,4%,1)`;
+    starCol='rgba(255,255,255,';
+  } else {
+    c0=_bgTheme.colors[0];
+    c1=_bgTheme.colors[1];
+    starCol=_bgTheme.starColor;
+  }
+
   const g=ctx.createRadialGradient(CX,CY,0,CX,CY,Math.max(W,H)*.85);
-  g.addColorStop(0,`hsla(${hue},${sat}%,8%,1)`);
-  g.addColorStop(.5,`hsla(${(hue+30)%360},${sat*.6}%,4%,1)`);
+  g.addColorStop(0,c0);
+  g.addColorStop(.5,c1);
   g.addColorStop(1,'rgba(1,1,4,1)');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   ctx.save();
   [[CX*.6,CY*.7],[CX*1.4,CY*1.3],[CX,CY*.4]].forEach(([nx,ny],i)=>{
     const drift=Math.sin(t*.08+i*2.1)*40;
     const ng=ctx.createRadialGradient(nx+drift,ny,0,nx+drift,ny,Math.min(W,H)*.45);
-    ng.addColorStop(0,`hsla(${(hue+i*40)%360},50%,15%,0.16)`);
+    ng.addColorStop(0,_bgTheme.id==='default'?`hsla(${(hue+i*40)%360},50%,15%,0.16)`:starCol+'0.12)');
     ng.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=ng;ctx.fillRect(0,0,W,H);
   });
   ctx.restore();
   ctx.save();
-  for(const s of getStars()){ctx.globalAlpha=s.a*(.6+.4*Math.sin(t*1.4+s.tw));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x%W,s.y%H,s.r,0,Math.PI*2);ctx.fill();}
+  for(const s of getStars()){ctx.globalAlpha=s.a*(.6+.4*Math.sin(t*1.4+s.tw));ctx.fillStyle=starCol+'1)';ctx.beginPath();ctx.arc(s.x%W,s.y%H,s.r,0,Math.PI*2);ctx.fill();}
   const sSeed=Math.floor(t/8);
   const ssRng=(n)=>{let x=Math.sin(n*9301+49297)*233280;return x-Math.floor(x);};
   const ssT=(t%8)/8;
@@ -7112,7 +7123,12 @@ function getCurrentBgTheme(){
   const id=localStorage.getItem('zivve_bg_theme')||'default';
   return BG_THEMES.find(t=>t.id===id)||BG_THEMES[0];
 }
-function setBgTheme(id){ localStorage.setItem('zivve_bg_theme',id); }
+function setBgTheme(id){
+  localStorage.setItem('zivve_bg_theme',id);
+  // Aggiorna subito il nome nel profilo se visibile
+  const el=document.getElementById('currentBgThemeName');
+  if(el){const t=BG_THEMES.find(function(t){return t.id===id;})||BG_THEMES[0];el.textContent=t.name;}
+}
 function getUnlockedBgThemes(){
   const lv=typeof getAccountLevel==='function'?getAccountLevel().lv:1;
   return BG_THEMES.filter(t=>{
