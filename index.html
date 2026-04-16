@@ -145,7 +145,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .orb-cat-title{font-size:10px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .orb-cat-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06)}
 .orb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
-.orb-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 6px;cursor:pointer;pointer-events:all;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:border-color .2s,background .2s;position:relative;overflow:hidden;min-width:0;max-width:100%;text-align:center}
+.orb-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:6px;padding:10px 6px;cursor:pointer;pointer-events:all;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;transition:border-color .2s,background .2s;position:relative;overflow:hidden;min-width:0;max-width:100%;text-align:center;min-height:200px}
 .orb-card.cat-gold,.orb-card.cat-glitter{border-color:rgba(255,229,102,.22);background:rgba(255,229,102,.03)}
 .orb-card.cat-festivity{border-color:rgba(255,100,50,.22);background:rgba(255,80,30,.03)}
 .orb-card.cat-earned{border-color:rgba(74,240,208,.2);background:rgba(74,240,208,.03)}
@@ -1134,7 +1134,7 @@ const ORB_CATALOG = [
    draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#aaffcc','#22cc66','#006633'),
    power:'endurance_start', powerDesc:'Parti invulnerabile per 10 secondi'},
   {id:'ghost_touch', cat:'earned', name:'Ghost Touch', price:0, earnedBy:'drift_best_time',    earnThreshold:120,
-   draw:(c,x,y,r)=>{drawOrbSolid(c,x,y,r,'rgba(200,220,255,.7)','rgba(100,150,255,.6)','rgba(40,60,180,.5)');c.globalAlpha=.3;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.strokeStyle='#aaccff';c.lineWidth=1.5;c.stroke();c.globalAlpha=1;},
+   draw:(c,x,y,r)=>{drawOrbSolid(c,x,y,r,'#d0e8ff','#6699ff','#1a2866');c.save();c.globalAlpha=.35;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.strokeStyle='#aaccff';c.lineWidth=r*.1;c.stroke();c.globalAlpha=.15;c.fillStyle='#aaccff';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.restore();},
    power:'ghost_vision', powerDesc:'Zona near miss +20% + nemici Ghost completamente visibili'},
   {id:'prestige',    cat:'earned', name:'Prestige',    price:0, earnedBy:'drift_best',         earnThreshold:500,
    draw:(c,x,y,r)=>{const g=c.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);g.addColorStop(0,'#e8ccff');g.addColorStop(.4,'#9933ff');g.addColorStop(1,'#330066');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();const sh=c.createRadialGradient(x-r*.2,y-r*.3,0,x,y,r*.5);sh.addColorStop(0,'rgba(255,229,102,.5)');sh.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=sh;c.beginPath();c.arc(x,y,r*.5,0,Math.PI*2);c.fill();},
