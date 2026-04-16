@@ -11489,19 +11489,13 @@ function runMDLIntro(cb){
     f++;
     var b;
     // 0-20: buio
-    if(f<=30){ b=0; }
-    // 30-105: accensione + flicker
-    else if(f<=105){
-      var p=(f-30)/75;
-      var fl = f<=50 ? (f%3===0?0.0:Math.random()*0.15)
-              : f<=75 ? (f%4<2?0.85:0.2+Math.random()*0.35)
-              : 0.9+Math.random()*0.1;
-      b=Math.sqrt(p)*fl;
-    }
-    // 105-240: piena luce
+    if(f<=20){ b=0; }
+    // 20-110: dissolvenza in entrata
+    else if(f<=110){ b=(f-20)/90; }
+    // 110-240: piena luce
     else if(f<=240){ b=1; }
-    // 240-360: spegnimento graduale
-    else if(f<=360){ b=Math.pow((360-f)/120,1.4); }
+    // 240-360: dissolvenza in uscita
+    else if(f<=360){ b=(360-f)/120; }
     else{ finish(); return; }
     b=Math.max(0,Math.min(1,b));
     img.style.opacity=b;
