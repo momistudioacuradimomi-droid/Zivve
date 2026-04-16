@@ -1126,6 +1126,28 @@ const ORB_CATALOG = [
   {id:'earn_perfect', cat:'earned', name:'✨ Perfetta',   price:0, earnedBy:'drift_perfect_dodges', earnThreshold:1,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#ffffff','#ccddff','#4488ff'), power:'perfect_chain', powerDesc:"Perfect Dodge a catena: x2, x3, x4... moltiplicatore"},
   {id:'earn_veteran', cat:'earned', name:'⭐ Veterana',   price:0, earnedBy:'drift_streak',         earnThreshold:7,   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#aaddff','#2266aa','#001144'), power:'veteran_start', powerDesc:'Inizi al livello 3 con +200 punti di vantaggio'},
   {id:'earn_king',    cat:'earned', name:'♛ Zivve King', price:0, earnedBy:'drift_best',            earnThreshold:500, draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#fff8cc','#ffd700','#884400'), power:'king_aura', powerDesc:"Ogni 100 pt: onda d'urto che respinge tutti i nemici"},
+  // ── SFERE SBLOCCABILI CON ACHIEVEMENT ──
+  {id:'nova',        cat:'earned', name:'Nova',        price:0, earnedBy:'drift_games_played', earnThreshold:1,
+   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#e8f4ff','#7ec8ff','#2244aa'),
+   power:'nova_shield', powerDesc:'Scudo extra: 2 colpi assorbiti prima di perdere la prima vita'},
+  {id:'endurance',   cat:'earned', name:'Endurance',   price:0, earnedBy:'drift_games_played', earnThreshold:50,
+   draw:(c,x,y,r)=>drawOrbSolid(c,x,y,r,'#aaffcc','#22cc66','#006633'),
+   power:'endurance_start', powerDesc:'Parti invulnerabile per 10 secondi'},
+  {id:'ghost_touch', cat:'earned', name:'Ghost Touch', price:0, earnedBy:'drift_best_time',    earnThreshold:120,
+   draw:(c,x,y,r)=>{drawOrbSolid(c,x,y,r,'rgba(200,220,255,.7)','rgba(100,150,255,.6)','rgba(40,60,180,.5)');c.globalAlpha=.3;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.strokeStyle='#aaccff';c.lineWidth=1.5;c.stroke();c.globalAlpha=1;},
+   power:'ghost_vision', powerDesc:'Zona near miss +20% + nemici Ghost completamente visibili'},
+  {id:'prestige',    cat:'earned', name:'Prestige',    price:0, earnedBy:'drift_best',         earnThreshold:500,
+   draw:(c,x,y,r)=>{const g=c.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);g.addColorStop(0,'#e8ccff');g.addColorStop(.4,'#9933ff');g.addColorStop(1,'#330066');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();const sh=c.createRadialGradient(x-r*.2,y-r*.3,0,x,y,r*.5);sh.addColorStop(0,'rgba(255,229,102,.5)');sh.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=sh;c.beginPath();c.arc(x,y,r*.5,0,Math.PI*2);c.fill();},
+   power:'veteran_start', powerDesc:"Parti dal livello 2 con +150 punti di vantaggio"},
+  {id:'legend',      cat:'earned', name:'Leggenda',    price:0, earnedBy:'drift_best',         earnThreshold:1000,
+   draw:(c,x,y,r)=>{c.save();c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.clip();const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'#fff8cc');g.addColorStop(.2,'#ffd700');g.addColorStop(.5,'#ff6600');g.addColorStop(.8,'#cc0066');g.addColorStop(1,'#330033');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.strokeStyle='rgba(255,255,200,.6)';c.lineWidth=r*.12;c.beginPath();c.arc(x,y,r*.85,0,Math.PI*2);c.stroke();c.restore();},
+   power:'double_score', powerDesc:'Punteggio x2 oltre il livello 5 + aura leggendaria'},
+  {id:'flame',       cat:'earned', name:'Flame',       price:0, earnedBy:'drift_streak',       earnThreshold:3,
+   draw:(c,x,y,r)=>{const g=c.createRadialGradient(x-r*.2,y-r*.3,0,x,y,r);g.addColorStop(0,'#fff4aa');g.addColorStop(.3,'#ff8800');g.addColorStop(.7,'#cc2200');g.addColorStop(1,'#440000');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.fillStyle='rgba(255,255,200,.4)';c.beginPath();c.arc(x-r*.25,y-r*.28,r*.22,0,Math.PI*2);c.fill();},
+   power:'flame_streak', powerDesc:"Streak di near miss non si azzera tra un livello e l'altro"},
+  {id:'duel',        cat:'earned', name:'Duel',        price:0, earnedBy:'drift_ch_wins',      earnThreshold:1,
+   draw:(c,x,y,r)=>{const g=c.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);g.addColorStop(0,'#ffcccc');g.addColorStop(.35,'#ff2244');g.addColorStop(.65,'#4af0d0');g.addColorStop(1,'#003333');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.fillStyle='rgba(255,255,255,.4)';c.beginPath();c.arc(x-r*.25,y-r*.28,r*.2,0,Math.PI*2);c.fill();},
+   power:'duel_shield', powerDesc:'Scudo automatico attivato ogni volta che sei a 1 vita'},
 
   // ── STAGIONI (disponibili tutto l'anno, tema stagionale) ──
   {id:'s_spring', cat:'seasonal',name:'🌸 Spring',  price:'€1.49', season:'spring',  draw:(c,x,y,r)=>drawOrbSeason(c,x,y,r,'spring'), power:'bloom', powerDesc:'Ogni 30s di gioco: guarisci 1 vita (max 3)'},
@@ -5178,6 +5200,13 @@ function registerHit(px,py,e){
   }
   G.lives--;G.shaking=24;
   G.invincible=seasonHasPower('long_invincible')?300:180;
+  // duel_shield: scudo automatico quando si scende a 1 vita
+  if(G.lives===1&&getOrbPower()==='duel_shield'&&!G._duelShieldUsed){
+    G._duelShieldUsed=true;
+    G.orbShieldFrames=Math.max(G.orbShieldFrames||0,8*60);
+    showMsg('⚔️ DUEL SHIELD — Scudo attivato!','#ff2244');
+    flashScreen('rgba(255,34,68,.25)');
+  }
   if(bpHasPower('bp_ignaris')){G._bpIgnarisActive=true;G._bpIgnarisTimer=300;showMsg('🔥 IGNARIS — Doppio per 5s!','#ff3300');}
   updateLivesUI();
   G._perfectMult=1;G.perfectDodgeCount=0; // reset moltiplicatore
@@ -5290,7 +5319,7 @@ function levelBump(){
   levelValEl.classList.add('bump');setTimeout(()=>levelValEl.classList.remove('bump'),420);
   updateLevelUI();sndLevelUp(isMajor);haptic(isMajor?[30,15,30,15,60]:[20,10,20,10,40]);
   // zigzag ai livelli major gestito nel loop principale
-  G.nearMissStreak=0;
+  if(getOrbPower()!=='flame_streak') G.nearMissStreak=0;
   try{_zSetTension(G.level);if(G.level%5===0)_zPlaySignature(0.07);}catch(e){}
 }
 
@@ -9313,15 +9342,30 @@ function changeProfileName(){
 }
 
 function resetProfile(){
-  if(confirm('Vuoi resettare le statistiche e i badge?\nFoto, nome e personalizzazione verranno mantenuti.')){
+  const dlg=document.createElement('div');
+  dlg.style.cssText='position:fixed;inset:0;background:rgba(3,3,10,.95);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:Syncopate,sans-serif;padding:24px';
+  dlg.innerHTML='<div style="font-size:13px;color:#ff4488;letter-spacing:.2em">RESET STATISTICHE</div>'
+    +'<div style="font-size:10px;color:rgba(200,220,255,.7);text-align:center;line-height:1.7;max-width:280px">Vuoi resettare statistiche e badge?<br>Foto, nome e personalizzazione verranno mantenuti.</div>';
+  const btnSi=document.createElement('button');
+  btnSi.textContent='✓ SÌ, RESETTA';
+  btnSi.style.cssText='width:100%;max-width:280px;padding:12px;background:rgba(255,34,68,.15);border:1px solid rgba(255,34,68,.4);color:#ff4488;border-radius:8px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:11px;letter-spacing:.15em';
+  btnSi.onclick=function(){
     ['drift_stats','drift_ach','drift_games_played','drift_best','drift_best_time',
      'drift_best_level','drift_best_near_miss','drift_total_time','drift_distance',
      'drift_total_near','drift_ch_wins','drift_daily_count','drift_survival_level',
      'drift_zigzag','drift_perfect_dodges','drift_streak','drift_last_play',
      'drift_legend_claimed','drift_badge_rewards_applied'].forEach(k=>localStorage.removeItem(k));
-    alert('Statistiche resettate. Personalizzazione mantenuta.');
+    dlg.remove();
+    showMsg('✓ Statistiche resettate','#4af0d0');
     showProfile();
-  }
+  };
+  const btnNo=document.createElement('button');
+  btnNo.textContent='← ANNULLA';
+  btnNo.style.cssText='width:100%;max-width:280px;padding:12px;background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:8px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:11px;letter-spacing:.15em';
+  btnNo.onclick=function(){dlg.remove();};
+  dlg.appendChild(btnSi);
+  dlg.appendChild(btnNo);
+  document.body.appendChild(dlg);
 }
 
 // ══════════════════════════════════════
