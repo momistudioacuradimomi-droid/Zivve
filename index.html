@@ -3788,6 +3788,17 @@ function reverseDir(){
   // bp_crono: slow-mo 3s dopo inversione
   if(G&&G.running&&bpHasPower('bp_crono')&&!G._bpCronoActive){G.slowMo=180;G._bpCronoActive=true;setTimeout(function(){if(G)G._bpCronoActive=false;},3500);}}
 function triggerPerfectDodge(px,py){
+  // Cooldown anti-spam: minimo 20 frame (~333ms) tra un PD e il successivo
+  const now=G.frameCount;
+  if(G._lastPDFrame&&(now-G._lastPDFrame)<20){
+    // Tap troppo veloce — conta come inversione normale
+    G.dir*=-1;
+    if(G.adapt)G.adapt.framesSinceTap=0;
+    G.rings.push({x:px,y:py,r:0,alpha:.4,color:'#ffffff',grow:6});
+    sndTap();
+    return;
+  }
+  G._lastPDFrame=now;
   G.dir*=-1;
   // bp_impulso: scudo ogni 5 inversioni
   // bp_aurora: dopo Perfect Dodge → 1.5s invincibilità
