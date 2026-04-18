@@ -3625,9 +3625,38 @@ function showBattlePassScreen(){
   if(!hasBP){
     const buyBtn = document.createElement('button');
     buyBtn.style.cssText = 'width:100%;max-width:320px;padding:14px;background:linear-gradient(135deg,#ffd700,#ff8800);color:#000;border:none;border-radius:12px;font-family:Syncopate,sans-serif;font-size:13px;font-weight:700;letter-spacing:.2em;cursor:pointer;margin-top:16px;box-shadow:0 0 20px rgba(255,215,0,.3)';
-    buyBtn.textContent = 'ACQUISTA — 2.99/mese';
-    buyBtn.onclick = function(){ if(typeof BATTLE_PASS_PRICE!=='undefined') window.open(BATTLE_PASS_PRICE,'_blank'); };
+    buyBtn.textContent = 'ACQUISTA — €2.99/mese';
+    buyBtn.onclick = function(){
+      if(typeof BATTLE_PASS_PRICE!=='undefined'){
+        const w = window.open(BATTLE_PASS_PRICE,'_blank');
+        window._bpStripeOpened = !!w;
+        window._bpStripeOpenedAt = Date.now();
+        // Mostra pulsante conferma dopo 5s
+        setTimeout(()=>{
+          if(document.body.contains(confirmBtn)) confirmBtn.style.display='block';
+        }, 5000);
+      }
+    };
     div.appendChild(buyBtn);
+    // Pulsante conferma pagamento BP (nascosto finché non si apre Stripe)
+    const confirmBtn = document.createElement('button');
+    confirmBtn.style.cssText = 'width:100%;max-width:320px;padding:12px;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.4);color:#ffd700;border-radius:8px;font-family:Syncopate,sans-serif;font-size:11px;font-weight:700;letter-spacing:.15em;cursor:pointer;margin-top:8px;display:none';
+    confirmBtn.textContent = '✓ HO COMPLETATO IL PAGAMENTO';
+    confirmBtn.onclick = function(){
+      if(!window._bpStripeOpened){
+        showMsg('❌ Completa prima il pagamento su Stripe','#ff4488');
+        return;
+      }
+      const elapsed = Date.now() - (window._bpStripeOpenedAt||0);
+      if(elapsed < 20000){
+        showMsg('⏳ Attendi il completamento del pagamento...','#ff8800');
+        return;
+      }
+      window._bpStripeOpened = false;
+      activateBattlePass();
+      div.remove();
+    };
+    div.appendChild(confirmBtn);
   }
   const closeBtn = document.createElement('button');
   closeBtn.style.cssText = 'background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;letter-spacing:.2em;margin-top:16px';
@@ -6748,7 +6777,13 @@ function getChallengeTarget(){
 const BATTLE_PASS_PRICE='https://buy.stripe.com/eVq7sL6q6aXB4KGcMk7kc00'; // €0.99 placeholder
 function getBPMonth(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
 function hasBattlePass(){ return localStorage.getItem('zivve_bp_'+getBPMonth())==='1'; }
-function activateBattlePass(){ localStorage.setItem('zivve_bp_'+getBPMonth(),'1'); showMsg('⭐ BATTLE PASS ATTIVO!','#ffd700'); }
+function activateBattlePass(){
+  if(!window._bpStripeOpened && !isTester()){
+    return; // blocca chiamate dirette da console
+  }
+  localStorage.setItem('zivve_bp_'+getBPMonth(),'1');
+  showMsg('⭐ BATTLE PASS ATTIVO!','#ffd700');
+}
 function getBPXPMultiplier(){ return hasBattlePass()?1.5:1; }
 // Battle pass rewards per level
 const BP_REWARDS=[
