@@ -746,7 +746,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
     <!-- Titolo attivo -->
     <div class="account-section" id="titleSection" style="display:none">
       <div class="account-section-title">Titolo in Classifica</div>
-      <div id="titleDisplay" style="font-family:'Syncopate',sans-serif;font-size:14px;font-weight:900;color:var(--gold);text-align:center;padding:8px;background:rgba(255,229,102,.08);border:1px solid rgba(255,229,102,.2);border-radius:8px"></div>
+      <button onclick="showTitleSelector()" style="width:100%;padding:11px 16px;background:rgba(255,229,102,.08);border:1px solid rgba(255,229,102,.2);border-radius:8px;color:var(--gold);font-family:'Syncopate',sans-serif;font-size:13px;font-weight:900;letter-spacing:.15em;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between">
+        <span id="titleDisplay"></span>
+        <span style="color:rgba(255,229,102,.4);font-size:9px">SCEGLI →</span>
+      </button>
     </div>
 
     <!-- Anteprima card profilo -->
@@ -6251,7 +6254,7 @@ const PERMANENT_UPGRADES = [
 ];
 
 function getFragments(){ return parseInt(localStorage.getItem(FRAG_KEY)||'0'); }
-function addFragments(n){ localStorage.setItem(FRAG_KEY, getFragments()+n); }
+function addFragments(n){ localStorage.setItem(FRAG_KEY, Math.max(0, getFragments()+n)); }
 function getUpgradeLevels(){
   try{ return JSON.parse(localStorage.getItem(UPGRADES_KEY)||'{}'); }catch(e){ return {}; }
 }
@@ -6537,7 +6540,7 @@ function getParagonScoreBonus(){
 // Aggiungi XP al giocatore
 function addXP(amount){
   const prev=getAccountLevel();
-  const bonus=getBPXPMultiplier?getBPXPMultiplier():1;
+  const bonus=(getBPXPMultiplier?getBPXPMultiplier():1)*(typeof getUpgradeXPMult==='function'?getUpgradeXPMult():1);
   setAccountXP(getAccountXP()+Math.floor(amount*bonus));
   const next=getAccountLevel();
   // Level up?
@@ -9068,10 +9071,8 @@ function showProfile(){
   const title = getPlayerTitle();
   const titleSec = document.getElementById('titleSection');
   const titleDisp = document.getElementById('titleDisplay');
-  if(title && titleSec && titleDisp){
-    titleSec.style.display = 'block';
-    titleDisp.textContent  = '[ ' + title + ' ]';
-  }
+  if(titleSec) titleSec.style.display = 'block';
+  if(titleDisp) titleDisp.textContent = title ? '[ ' + title + ' ]' : '— nessun titolo —';
 
   // Anteprima
   updateAccountPreview();
@@ -9429,8 +9430,9 @@ function updateSeasonProgress(totalGames, totalSecs, levelThisGame, totalNearMis
   const prefix = 'zivve_season_prog_';
 
   // Aggiorna contatori mensili
-  const gamesMonth = parseInt(localStorage.getItem('zivve_games_month_total')||'0') + 1;
-  localStorage.setItem('zivve_games_month_total', gamesMonth);
+  const _bpMonth = typeof getBPMonth==='function' ? getBPMonth() : 'total';
+  const gamesMonth = parseInt(localStorage.getItem('zivve_games_month_'+_bpMonth)||'0') + 1;
+  localStorage.setItem('zivve_games_month_'+_bpMonth, gamesMonth);
   const secsMonth = parseInt(localStorage.getItem('zivve_secs_month_total')||'0') + (G&&G.survivedSecs||0);
   localStorage.setItem('zivve_secs_month_total', secsMonth);
   const nmMonth = parseInt(localStorage.getItem('zivve_nm_month_total')||'0') + (G&&G.nearMissCount||0);
@@ -10296,6 +10298,7 @@ function applyBadgeReward(badgeId){
 
   // 3. Titolo
   if(reward.title){
+    unlockTitle(reward.title); // aggiunge alla collezione permanente
     const current = localStorage.getItem('drift_title');
     // Priorità titoli: LEGGENDA > CAMPIONE > MAESTRO > VETERANO
     const priority = {'LEGGENDA':5,'CAMPIONE':4,'MAESTRO':3,'VETERANO':2,'ZIVVE KING':1};
@@ -10319,6 +10322,7 @@ function checkLegendReward(){
     // Sblocca tutto
     applyBadgeReward('score_1000'); // sfera Leggenda
     const expires = Date.now() + 365 * 86400000; // 1 anno
+    unlockTitle('LEGGENDA');
     localStorage.setItem('drift_title', JSON.stringify({title:'LEGGENDA', expires}));
     // Moltiplicatore permanente piccolo
     localStorage.setItem('drift_weekly_mult', JSON.stringify({
@@ -10533,6 +10537,7 @@ function applyWeeklyPrize(data){
   // Titolo Champion
   if(prize.title){
     const expires=Date.now()+7*86400000;
+    if(prize.title) unlockTitle(prize.title);
     localStorage.setItem('drift_title',JSON.stringify({title:prize.title,expires}));
   }
 }
@@ -10587,11 +10592,108 @@ function getWeeklyMultiplier(){
 
 // Titolo in classifica
 function getPlayerTitle(){
+  // Prima controlla il titolo scelto manualmente
+  const chosen = localStorage.getItem('drift_title_chosen');
+  if(chosen) return chosen;
+  // Altrimenti usa il titolo guadagnato più recente
   const raw=localStorage.getItem('drift_title');
   if(!raw) return '';
-  const {title,expires}=JSON.parse(raw);
-  if(Date.now()>expires){ localStorage.removeItem('drift_title'); return ''; }
-  return title;
+  try{
+    const {title,expires}=JSON.parse(raw);
+    if(Date.now()>expires){ localStorage.removeItem('drift_title'); return ''; }
+    return title;
+  }catch(e){ return ''; }
+}
+
+// Aggiunge un titolo alla collezione permanente del giocatore
+function unlockTitle(title){
+  if(!title) return;
+  const raw = localStorage.getItem('drift_titles_unlocked')||'[]';
+  let titles = [];
+  try{ titles = JSON.parse(raw); }catch(e){ titles=[]; }
+  if(!titles.includes(title)){
+    titles.push(title);
+    localStorage.setItem('drift_titles_unlocked', JSON.stringify(titles));
+  }
+}
+
+// Restituisce i titoli sbloccati
+function getUnlockedTitles(){
+  const raw = localStorage.getItem('drift_titles_unlocked')||'[]';
+  try{ return JSON.parse(raw); }catch(e){ return []; }
+}
+
+// Schermata selezione titolo
+function showTitleSelector(){
+  const titles = getUnlockedTitles();
+  const current = localStorage.getItem('drift_title_chosen')||'';
+
+  // Aggiungi anche titoli attivi non ancora in collezione
+  const raw = localStorage.getItem('drift_title');
+  if(raw){
+    try{
+      const {title,expires}=JSON.parse(raw);
+      if(Date.now()<expires && !titles.includes(title)) titles.push(title);
+    }catch(e){}
+  }
+
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;inset:0;background:rgba(3,3,10,.97);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:Syncopate,sans-serif;padding:24px';
+  dlg.innerHTML = '<div style="font-size:11px;letter-spacing:.3em;color:#4af0d0;margin-bottom:4px">SCEGLI TITOLO</div>'
+    +'<div style="font-size:9px;color:rgba(200,220,255,.4);letter-spacing:.1em;margin-bottom:8px">Mostrato in classifica accanto al tuo nome</div>';
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px';
+
+  // Opzione "nessun titolo"
+  const noneBtn = document.createElement('div');
+  noneBtn.style.cssText = 'padding:12px 16px;border:1.5px solid '+(current===''?'#4af0d0':'rgba(255,255,255,.1)')+';border-radius:8px;cursor:pointer;text-align:center;font-size:10px;color:'+(current===''?'#4af0d0':'rgba(200,220,255,.5)')+';letter-spacing:.15em';
+  noneBtn.textContent = '— NESSUN TITOLO —';
+  noneBtn.onclick = ()=>{ localStorage.removeItem('drift_title_chosen'); dlg.remove(); showMsg('Titolo rimosso','#4af0d0'); refreshProfileTitleDisplay(); };
+  wrap.appendChild(noneBtn);
+
+  if(titles.length === 0){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;font-size:9px;color:rgba(200,220,255,.3);letter-spacing:.1em;padding:16px';
+    empty.textContent = 'Nessun titolo sbloccato. Sali in classifica, fai streak o raggiungi 1000pt!';
+    wrap.appendChild(empty);
+  }
+
+  const TITLE_COLORS = {
+    'LEGGENDA':'#ffd700','CAMPIONE':'#ff8800','MAESTRO':'#9933ff',
+    'VETERANO':'#4af0d0','ZIVVE KING':'#ffe566','PRIMA PARTITA':'#88ccff'
+  };
+
+  titles.forEach(t => {
+    const col = TITLE_COLORS[t] || '#4af0d0';
+    const isActive = current === t;
+    const btn = document.createElement('div');
+    btn.style.cssText = 'padding:12px 16px;border:1.5px solid '+(isActive?col:'rgba(255,255,255,.1)')+';border-radius:8px;cursor:pointer;text-align:center;background:'+(isActive?'rgba(74,240,208,.08)':'rgba(255,255,255,.03)')+';display:flex;align-items:center;justify-content:space-between';
+    btn.innerHTML = '<span style="font-size:11px;color:'+col+';font-weight:700;letter-spacing:.15em">'+t+'</span>'
+      +(isActive?'<span style="font-size:14px;color:'+col+'">✓</span>':'');
+    btn.onclick = ()=>{
+      localStorage.setItem('drift_title_chosen', t);
+      dlg.remove();
+      showMsg('Titolo: '+t,'#4af0d0');
+      refreshProfileTitleDisplay();
+    };
+    wrap.appendChild(btn);
+  });
+
+  dlg.appendChild(wrap);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '← INDIETRO';
+  closeBtn.style.cssText = 'background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);padding:10px 20px;border-radius:6px;cursor:pointer;font-family:Syncopate,sans-serif;font-size:10px;margin-top:4px;letter-spacing:.1em';
+  closeBtn.onclick = ()=>dlg.remove();
+  dlg.appendChild(closeBtn);
+  document.body.appendChild(dlg);
+}
+
+function refreshProfileTitleDisplay(){
+  const el = document.getElementById('titleDisplay');
+  const t = getPlayerTitle();
+  if(el) el.textContent = t ? '[ ' + t + ' ]' : '— nessun titolo —';
 }
 
 // Renderizza tab Weekly nella classifica
