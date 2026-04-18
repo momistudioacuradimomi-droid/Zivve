@@ -4575,9 +4575,9 @@ const RACE_POWERUPS = [
   { id:'r_slow',     icon:'🔮',  name:'Ultra Slow',       apply:()=>{ const px=CX+Math.cos(G.angle)*ORBIT_R,py=CY+Math.sin(G.angle)*ORBIT_R; applyPowerup('slow',px,py); } },
   { id:'r_clear',    icon:'💥',  name:'Pulisci Campo',    apply:()=>{ G.enemies=G.enemies.filter(e=>e.type.isPowerup); flashScreen('rgba(255,229,102,.4)'); showMsg('💥 CAMPO PULITO!','#ffe566'); } },
   { id:'r_mult',     icon:'⚡',  name:'+20% Punteggio',   apply:()=>{ G._raceMult=(G._raceMult||1)+0.2; showMsg('⚡ +20% Punteggio!','#ffe566'); } },
-  { id:'r_speed',    icon:'🐌',  name:'Nemici -20% vel',  apply:()=>{ G.enemies.forEach(e=>{if(!e.type.isPowerup){e.vx*=.8;e.vy*=.8;}}); showMsg('🐌 Nemici rallentati!','#4af0d0'); } },
+  { id:'r_speed',    icon:'🐌',  name:'Nemici -20% vel',  apply:()=>{ G.enemies.forEach(e=>{if(!e.type.isPowerup){e.vx*=.8;e.vy*=.8;}}); G._raceSlowTimer=600; showMsg('🐌 Nemici rallentati!','#4af0d0'); } },
   { id:'r_lives2',   icon:'💖',  name:'+2 Vite',          apply:()=>{ G.lives=Math.min(G.lives+2,6); updateLivesUI(); showMsg('💖 +2 Vite!','#ff4488'); } },
-  { id:'r_xp',       icon:'✨',  name:'+100 XP Bonus',    apply:()=>{ addXP(100); showMsg('✨ +100 XP!','#4af0d0'); } },
+  { id:'r_xp',       icon:'✨',  name:'+500 Punti',       apply:()=>{ G.scoreBonus=(G.scoreBonus||0)+500; showMsg('✨ +500 Punti!','#4af0d0'); } },
 ];
 
 function startRaceMode(){
@@ -4611,7 +4611,9 @@ function checkRaceWave(){
 function showRaceChoice(){
   if(!G||!G.running||_raceChoiceActive) return;
   _raceChoiceActive=true;
-  // Non mette in pausa — attiva scudo immediato invece
+  // Congela il punteggio durante la scelta
+  G._racePaused=true;
+  G._racePausedScore=G._scoreBase;
   G.shieldActive=true;
   G._raceChoiceShield=true;
 
@@ -4635,6 +4637,8 @@ function showRaceChoice(){
     btn.onclick=()=>{
       overlay.remove();
       _raceChoiceActive=false;
+      // Riprendi accumulo punteggio dal punto in cui era fermo
+      G._racePaused=false;
       try{ p.apply(); }catch(e){}
       // Scudo rimane per 2 secondi dopo la scelta poi sparisce
       setTimeout(()=>{
@@ -4716,7 +4720,7 @@ function update(){
   // Score base: cresce di un incremento fisso ogni frame — non ricalcola da zero
   // Evita oscillazioni da moltiplicatore variabile
   const _scoreInc = (1/3.5)*(isNaN(_sm2)?1:_sm2);
-  G._scoreBase=(G._scoreBase||0)+_scoreInc;
+  if(!G._racePaused) G._scoreBase=(G._scoreBase||0)+_scoreInc;
   G.score=Math.floor(G._scoreBase)+(G.scoreBonus||0);
   const nl=Math.floor(G.frameCount/FRAMES_PER_LEVEL)+1;
   if(nl!==G.level){
@@ -4752,7 +4756,8 @@ G.maxEnemies=Math.min(_isBreath?Math.max(1,_baseMax-2):_isPeak?2:_baseMax,10);
     const pus=G.enemies.filter(e=>e.type.key===key);
     if(pus.length>1) pus.slice(1).forEach(e=>{const i=G.enemies.indexOf(e);if(i>-1)G.enemies.splice(i,1);});
   });
-  if(!G.bossActive&&G.spawnTimer>=SPAWN_INTERVAL&&G.enemies.length<G.maxEnemies){G.spawnTimer=0;spawnEnemy(false);}
+  if(G._raceSlowTimer>0){G._raceSlowTimer--;}
+if(!G.bossActive&&G.spawnTimer>=SPAWN_INTERVAL&&G.enemies.length<G.maxEnemies){G.spawnTimer=0;spawnEnemy(false);}
 
   // Power-up spawn: ogni 600-900 frame (10-15s), max 1 attivo per tipo
   // ── POWERUP SPAWN ──
