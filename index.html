@@ -11140,6 +11140,42 @@ setTimeout(showWeeklyRewardBanner, 1200);
   setTimeout(testerUnlockAll, 300);
   updateLiveCounter();
 
+  // Controlla se si torna da un pagamento Stripe completato
+  const _urlParams = new URLSearchParams(window.location.search);
+  if(_urlParams.get('payment')==='success'){
+    // Rimuovi il parametro dall'URL senza ricaricare
+    window.history.replaceState({}, '', window.location.pathname);
+    // Aspetta che il gioco sia inizializzato poi controlla Firebase
+    setTimeout(async function(){
+      try{
+        const _pName = localStorage.getItem('drift_name')||'';
+        if(!_pName||_pName==='ZIVVER') return;
+        const safe = encodeURIComponent(_pName.toUpperCase()).replace(/%/g,'_');
+        const res = await fetch(FIREBASE_URL+'/payments/'+safe+'/orbs.json?_='+Date.now());
+        const data = res.ok ? await res.json() : null;
+        if(data && typeof data==='object'){
+          let newOrbs = [];
+          Object.keys(data).forEach(function(orbId){
+            if(data[orbId].unlocked===true && !ownedOrbs.includes(orbId)){
+              const orbDef = getOrb(orbId);
+              if(orbDef){
+                ownedOrbs.push(orbId);
+                newOrbs.push(orbDef.name||orbId);
+              }
+            }
+          });
+          if(newOrbs.length>0){
+            localStorage.setItem('drift_owned',JSON.stringify(ownedOrbs));
+            syncInventoryToFirebase(_pName);
+            setTimeout(function(){
+              showMsg('🎉 '+newOrbs.join(', ')+' sbloccata!','#ffe566');
+            },1500);
+          }
+        }
+      }catch(e){ console.log('payment check error:',e); }
+    }, 1000);
+  }
+
   function go(){
     if(!localStorage.getItem('drift_onboarding_done')){
       setTimeout(startOnboarding, 300);
