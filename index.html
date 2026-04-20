@@ -17,38 +17,6 @@
 <meta property="og:title" content="ZIVVE">
 <meta property="og:description" content="Il gioco più semplice che non riesci a smettere di giocare.">
 <script>
-// ── CHECK PAGAMENTO STRIPE — eseguito prima di tutto ──
-(function(){
-  if(window.location.search.indexOf('payment=success') === -1) return;
-  // Rimuovi il parametro subito
-  window.history.replaceState({}, '', window.location.pathname);
-  // Leggi i dati necessari dal localStorage
-  const pName = localStorage.getItem('drift_name')||'';
-  if(!pName || pName === 'ZIVVER') return;
-  const safe = encodeURIComponent(pName.toUpperCase()).replace(/%/g,'_');
-  const dbUrl = 'https://zivve-game-default-rtdb.europe-west1.firebasedatabase.app';
-  // Fetch sincrono-like con async IIFE prima del DOM
-  fetch(dbUrl+'/payments/'+safe+'/orbs.json?_='+Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(!data || typeof data !== 'object') return;
-      const saved = JSON.parse(localStorage.getItem('drift_owned')||'["cyan","blue","white"]');
-      let changed = false;
-      Object.keys(data).forEach(function(orbId){
-        if(data[orbId].unlocked === true && !saved.includes(orbId)){
-          saved.push(orbId);
-          changed = true;
-        }
-      });
-      if(changed){
-        localStorage.setItem('drift_owned', JSON.stringify(saved));
-        // Segna che c'è una nuova sfera da mostrare
-        localStorage.setItem('drift_payment_new_orb', '1');
-      }
-    })
-    .catch(function(e){ console.log('payment sync error:', e); });
-})();
-
 // Lingua: italiano di default, rispetta la scelta dell'utente
 if(!localStorage.getItem('drift_lang')){
   localStorage.setItem('drift_lang','it');
@@ -4244,8 +4212,8 @@ async function openStripeCheckout(orbId, orbName, price){
         priceId: priceId,
         orbId: orbId,
         playerName: playerName,
-        successUrl: window.location.href.split('?')[0]+'?payment=success',
-        cancelUrl: window.location.href.split('?')[0]+'?payment=cancel',
+        successUrl: 'https://momistudioacuradimomi-droid.github.io/zivve/payment-success.html',
+        cancelUrl: window.location.href.split('?')[0],
       })
     });
     const json = await resp.json();
@@ -11173,8 +11141,8 @@ setTimeout(showWeeklyRewardBanner, 1200);
   updateLiveCounter();
 
   // Notifica nuova sfera dopo pagamento
-  if(localStorage.getItem('drift_payment_new_orb')==='1'){
-    localStorage.removeItem('drift_payment_new_orb');
+  if(localStorage.getItem('drift_payment_success')==='1'){
+    localStorage.removeItem('drift_payment_success');
     setTimeout(function(){ showMsg('🎉 Sfera sbloccata! Aprila nel negozio.','#ffe566'); }, 1500);
   }
 
