@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pagamento completato — ZIVVE</title>
 <style>
-  body{margin:0;background:#03030a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;color:#fff}
+  body{margin:0;background:#03030a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;text-align:center}
   .icon{font-size:64px;margin-bottom:16px}
   h1{font-size:20px;color:#4af0d0;letter-spacing:.2em;margin-bottom:8px}
-  p{font-size:13px;color:rgba(200,220,255,.6);letter-spacing:.1em}
-  .spinner{width:32px;height:32px;border:3px solid rgba(74,240,208,.2);border-top-color:#4af0d0;border-radius:50%;animation:spin 1s linear infinite;margin-top:24px}
+  p{font-size:13px;color:rgba(200,220,255,.6);letter-spacing:.1em;margin-bottom:24px}
+  .spinner{width:32px;height:32px;border:3px solid rgba(74,240,208,.2);border-top-color:#4af0d0;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="icon">🎉</div>
 <h1>PAGAMENTO COMPLETATO</h1>
-<p>Sblocco la sfera...</p>
+<p>Sblocco la tua sfera...</p>
 <div class="spinner"></div>
 
 <script>
@@ -26,33 +26,38 @@ const GAME_URL = 'https://momistudioacuradimomi-droid.github.io/zivve/';
 async function unlockAndRedirect(){
   try{
     const pName = localStorage.getItem('drift_name')||'';
+    const pending = JSON.parse(localStorage.getItem('drift_stripe_pending')||'{}');
+
     if(pName && pName !== 'ZIVVER'){
       const safe = encodeURIComponent(pName.toUpperCase()).replace(/%/g,'_');
+
       // Aspetta fino a 10 secondi che il webhook scriva su Firebase
-      let data = null;
+      let unlocked = false;
       for(let i=0; i<10; i++){
         const res = await fetch(FIREBASE_URL+'/payments/'+safe+'/orbs.json?_='+Date.now());
-        data = res.ok ? await res.json() : null;
-        if(data && typeof data==='object' && Object.keys(data).length>0) break;
-        await new Promise(r=>setTimeout(r,1000));
-      }
-      if(data && typeof data==='object'){
-        const saved = JSON.parse(localStorage.getItem('drift_owned')||'["cyan","blue","white"]');
-        let changed = false;
-        Object.keys(data).forEach(function(orbId){
-          if(data[orbId].unlocked===true && !saved.includes(orbId)){
-            saved.push(orbId);
-            changed = true;
+        const data = res.ok ? await res.json() : null;
+        if(data && typeof data==='object'){
+          const saved = JSON.parse(localStorage.getItem('drift_owned')||'["cyan","blue","white"]');
+          let changed = false;
+          Object.keys(data).forEach(function(orbId){
+            if(data[orbId].unlocked===true && !saved.includes(orbId)){
+              saved.push(orbId);
+              changed = true;
+              unlocked = true;
+            }
+          });
+          if(changed){
+            localStorage.setItem('drift_owned', JSON.stringify(saved));
+            localStorage.setItem('drift_payment_success','1');
           }
-        });
-        if(changed){
-          localStorage.setItem('drift_owned', JSON.stringify(saved));
-          localStorage.setItem('drift_payment_success','1');
+          if(unlocked) break;
         }
+        await new Promise(r=>setTimeout(r,1000));
       }
     }
   }catch(e){ console.log('error:', e); }
-  // Torna al gioco
+
+  localStorage.removeItem('drift_stripe_pending');
   window.location.href = GAME_URL;
 }
 
